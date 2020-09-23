@@ -27,19 +27,22 @@ lex_rule_part
 	: '(' lex_rule_body ')'
 	| TOKEN_NAME
 	| TOKEN_LIT
+	| DOT
 	| CHAR_CLASS
 	;
 
-char_class: '[' (INDIV_CHAR | CHAR_RANGE)+ ']';
+//char_class: '[' (INDIV_CHAR | CHAR_RANGE)+ ']';
 
 // *** Lexer ***
 
-fragment ALPHA_NUM: [A-Za-z0-9_];
+fragment NAME: [A-Za-z0-9_];
 
-RULE_NAME: [a-z] ALPHA_NUM*;
+RULE_NAME: [a-z] NAME*;
 
-TOKEN_NAME: [A-Z] ALPHA_NUM*;
+TOKEN_NAME: [A-Z] NAME*;
 
 TOKEN_LIT: '\'' ('\\\'' | ~'\'')+ '\'';
+
+DOT: '.';
 
 CHAR_CLASS: '[' ~']' ']'; // TODO: Expand greatly
