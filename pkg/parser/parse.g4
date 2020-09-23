@@ -1,5 +1,9 @@
-grammar lex_parser
+parser grammar parse
 	;
+
+options {
+	tokenVocab = lex;
+}
 
 top_level: (rule | lex_rule)* EOF;
 
@@ -27,22 +31,12 @@ lex_rule_part
 	: '(' lex_rule_body ')'
 	| TOKEN_NAME
 	| TOKEN_LIT
-	| DOT
-	| CHAR_CLASS
+	| '.'
+	| char_set
 	;
 
-//char_class: '[' (INDIV_CHAR | CHAR_RANGE)+ ']';
+char_set: '[' (char | char_range)+ ']';
 
-// *** Lexer ***
+char: UNICODE_ESCAPE_CHAR | ESCAPE_CHAR | BASIC_CHAR;
 
-fragment NAME: [A-Za-z0-9_];
-
-RULE_NAME: [a-z] NAME*;
-
-TOKEN_NAME: [A-Z] NAME*;
-
-TOKEN_LIT: '\'' ('\\\'' | ~'\'')+ '\'';
-
-DOT: '.';
-
-CHAR_CLASS: '[' ~']' ']'; // TODO: Expand greatly
+char_range: char '-' char;
