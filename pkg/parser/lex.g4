@@ -11,11 +11,31 @@ TOKEN_NAME: [A-Z] NAME;
 
 TOKEN_LIT
 	: '\'' ('\\\'' | ~'\'')+ '\''
-	; // TODO: Handle escape chars as frag
+	; // TODO: Handle escape chars as fragment
 
-LBRACK: '[' -> pushMode(CHAR_CLASS);
+// *** Skip ***
+
+COMMENT: '//' ~[\r\n]* -> skip;
+
+ML_COMMENT
+	: '/*' .*? '*/' -> skip
+	; // TODO: Will we support reluctant matchers?
+
+WS: [ \t\r\n\f]+ -> skip;
+
+// *** Keywords ***
 
 FRAGMENT: 'fragment';
+
+SKIP_ACTION: 'skip';
+
+PUSH_ACTION: 'pushMode';
+
+POP_ACTION: 'popMode';
+
+// *** Basic Sequences ****
+
+RARROW: '->';
 
 DOT: '.';
 
@@ -36,6 +56,10 @@ STAR: '*';
 QUEST_MARK: '?';
 
 TILDE: '~';
+
+COMMA: ',';
+
+LBRACK: '[' -> pushMode(CHAR_CLASS);
 
 // *** Lexer: CHAR_CLASS ***
 
