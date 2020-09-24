@@ -5,6 +5,14 @@ fragment HEX_DIGIT: [A-Fa-f0-9];
 
 fragment NAME: [A-Za-z0-9_]*;
 
+fragment COMMENT: '//' ~[\r\n]* -> skip;
+
+fragment ML_COMMENT
+	: '/*' .*? '*/' -> skip
+	; // TODO: Will we support reluctant matchers?
+
+fragment WS: [ \t\r\n\f]+ -> skip;
+
 RULE_NAME: [a-z] NAME;
 
 TOKEN_NAME: [A-Z] NAME;
@@ -15,13 +23,11 @@ TOKEN_LIT
 
 // *** Skip ***
 
-COMMENT: '//' ~[\r\n]* -> skip;
+REG_COMMENT: COMMENT;
 
-ML_COMMENT
-	: '/*' .*? '*/' -> skip
-	; // TODO: Will we support reluctant matchers?
+REG_ML_COMMENT: ML_COMMENT;
 
-WS: [ \t\r\n\f]+ -> skip;
+REG_WS: WS;
 
 // *** Keywords ***
 
@@ -75,3 +81,11 @@ BASIC_CHAR: ~[\]\\\-];
 DASH: '-';
 
 RBRACK: ']' -> popMode;
+
+// *** Skip ***
+
+CC_COMMENT: COMMENT;
+
+CC_ML_COMMENT: ML_COMMENT;
+
+CC_WS: WS;
