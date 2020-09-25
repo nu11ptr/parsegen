@@ -1,7 +1,11 @@
 package lexer
 
+import "unicode/utf8"
+
 const (
-	eof rune = -1
+	eof rune = '\uffff'
+	err rune = '\ufffe'
+	bom rune = '\ufeff'
 )
 
 type Token struct {
@@ -12,12 +16,42 @@ type Token struct {
 }
 
 type Lexer struct {
-	pos, tokenMark, mark int
-	mode                 Mode
+	pos, tokenMark, mark                                 int
+	mode                                                 Mode
+	currCh                                               rune
+	input                                                []byte
+	startCol, endCol, startRow, endRow, markCol, markRow int
+}
+
+func (l *Lexer) readChar() (ch rune) {
+	size := 1
+	ch = rune(l.input[l.pos])
+
+	if ch >= utf8.RuneSelf {
+		// Is not a single byte wide, so fallback to full UTF8 decode
+		ch, size = utf8.DecodeRune(l.input[l.pos:])
+		if ch == utf8.RuneError {
+			if size > 0 {
+				// TODO: record illegal encoding error
+				ch = err
+			} else {
+				// TODO: record error and return EOF???
+				ch = err
+			}
+			return
+		} else if ch == bom && l.pos > 0 {
+			// TODO: record illegal byte order mark
+			ch = err
+			return
+		}
+	}
+
+	l.pos += size
+	return
 }
 
 func (l *Lexer) currChar() rune {
-	return eof
+	return l.currCh
 }
 
 func (l *Lexer) nextChar() rune {
@@ -139,8 +173,17 @@ func (l *Lexer) notMatchCharInSeq(seq string) bool {
 	return true
 }
 
-func (l *Lexer) untilMatchSeq(seq string) {
-
+func (l *Lexer) matchUntilSeq(seq string) {
+outer:
+	for ch := l.currChar(); ch != eof; ch = l.nextChar() {
+		for _, c := range seq {
+			if c != ch {
+				continue outer
+			}
+			ch = l.nextChar()
+		}
+		break
+	}
 }
 
 // *** Potentially Generated ***
@@ -264,7 +307,7 @@ func (l *Lexer) charClassNextToken(ch rune, t *Token) {
 		// '/*'
 		case '*':
 			l.nextChar()
-			l.untilMatchSeq("*/")
+			l.matchUntilSeq("*/")
 			l.discardTokenData()
 		default:
 			l.buildTokenDataNext(ILLEGAL, t)
@@ -365,7 +408,7 @@ func (l *Lexer) NextToken(t *Token) {
 		// '/*'
 		case '*':
 			l.nextChar()
-			l.untilMatchSeq("*/")
+			l.matchUntilSeq("*/")
 			l.discardTokenData()
 		default:
 			l.buildTokenDataNext(ILLEGAL, t)
