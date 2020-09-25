@@ -25,14 +25,21 @@ func (l *Lexer) nextChar() rune {
 }
 
 func (l *Lexer) markPos() {
+	l.mark = l.pos
 }
 
 func (l *Lexer) resetPos() {
+	l.pos = l.mark
 }
 
 func (l *Lexer) buildToken(tt TokenType, t *Token) {
 	t.Type = tt
 	l.tokenMark = l.pos
+}
+
+func (l *Lexer) buildTokenNext(tt TokenType, t *Token) {
+	l.nextChar()
+	l.buildToken(tt, t)
 }
 
 func (l *Lexer) buildTokenData(tt TokenType, t *Token) {
@@ -41,33 +48,95 @@ func (l *Lexer) buildTokenData(tt TokenType, t *Token) {
 	l.tokenMark = l.pos
 }
 
+func (l *Lexer) buildTokenDataNext(tt TokenType, t *Token) {
+	l.nextChar()
+	l.buildTokenData(tt, t)
+}
+
+func (l *Lexer) discardTokenData() {
+	l.tokenMark = l.pos
+}
+
+func (l *Lexer) discardTokenDataNext() {
+	l.nextChar()
+	l.discardTokenData()
+}
+
 func (l *Lexer) matchSeq(seq string) bool {
+	l.markPos()
+	ch := l.currChar()
+
+	for _, c := range seq {
+		if ch != c {
+			l.resetPos()
+			return false
+		}
+		ch = l.nextChar()
+	}
 	return true
 }
 
-func (l *Lexer) matchChar(ch, char rune) bool {
-	return ch == char
+func (l *Lexer) matchChar(char rune) bool {
+	if l.currChar() != char {
+		return false
+	}
+
+	l.nextChar()
+	return true
 }
 
-func (l *Lexer) notMatchChar(ch, char rune) bool {
-	return ch != char
+func (l *Lexer) notMatchChar(char rune) bool {
+	if l.currChar() == char {
+		return false
+	}
+
+	l.nextChar()
+	return true
 }
 
-func (l *Lexer) matchCharRange(ch, start, end rune) bool {
-	return ch >= start && ch <= end
+func (l *Lexer) matchCharInRange(start, end rune) bool {
+	ch := l.currChar()
+	if ch < start || ch > end {
+		return false
+	}
+
+	l.nextChar()
+	return true
 }
 
-func (l *Lexer) matchCharInSeq(ch rune, seq string) bool {
+func (l *Lexer) notMatchCharInRange(start, end rune) bool {
+	ch := l.currChar()
+	if ch >= start && ch <= end {
+		return false
+	}
+
+	l.nextChar()
+	return true
+}
+
+func (l *Lexer) matchCharInSeq(seq string) bool {
+	ch := l.currChar()
+
 	for _, c := range seq {
 		if ch == c {
+			l.nextChar()
 			return true
 		}
 	}
 	return false
 }
 
-func (l *Lexer) notMatchCharInSeq(ch rune, seq string) bool {
-	return !l.matchCharInSeq(ch, seq)
+func (l *Lexer) notMatchCharInSeq(seq string) bool {
+	ch := l.currChar()
+
+	for _, c := range seq {
+		if ch == c {
+			return false
+		}
+	}
+
+	l.nextChar()
+	return true
 }
 
 func (l *Lexer) untilMatchSeq(seq string) {
@@ -138,16 +207,15 @@ var (
 	}
 )
 
-func (l *Lexer) processRuleName(ch rune, t *Token) bool {
+func (l *Lexer) processRuleName(t *Token) bool {
 	// [a-z]
-	if !l.matchCharRange(ch, 'a', 'z') {
+	if !l.matchCharInRange('a', 'z') {
 		return false
 	}
-	ch = l.nextChar()
 
 	// [A-Za-z0-9_]*
-	for l.matchCharRange(ch, 'A', 'Z') || l.matchCharRange(ch, 'a', 'z') ||
-		l.matchCharRange(ch, '0', '9') || l.matchChar(ch, '_') {
+	for l.matchCharInRange('A', 'Z') || l.matchCharInRange('a', 'z') ||
+		l.matchCharInRange('0', '9') || l.matchChar('_') {
 	}
 
 	l.buildTokenData(RULE_NAME, t)
@@ -156,20 +224,21 @@ func (l *Lexer) processRuleName(ch rune, t *Token) bool {
 	tt, ok := keywords[t.Data]
 	if ok {
 		t.Type = tt
+		t.Data = ""
 	}
 
 	return true
 }
 
-func (l *Lexer) processTokenName(ch rune, t *Token) bool {
+func (l *Lexer) processTokenName(t *Token) bool {
 	// [A-Z]
-	if !l.matchCharRange(ch, 'A', 'Z') {
+	if !l.matchCharInRange('A', 'Z') {
 		return false
 	}
 
 	// [A-Za-z0-9_]*
-	for l.matchCharRange(ch, 'A', 'Z') || l.matchCharRange(ch, 'a', 'z') ||
-		l.matchCharRange(ch, '0', '9') || l.matchChar(ch, '_') {
+	for l.matchCharInRange('A', 'Z') || l.matchCharInRange('a', 'z') ||
+		l.matchCharInRange('0', '9') || l.matchChar('_') {
 	}
 
 	l.buildTokenData(TOKEN_NAME, t)
@@ -186,24 +255,32 @@ func (l *Lexer) charClassNextToken(ch rune, t *Token) {
 		switch ch {
 		// '//'
 		case '/':
+			l.nextChar()
+
 			// ~[\r\n]*
-			for l.notMatchCharInSeq(ch, "\r\n") {
+			for l.notMatchCharInSeq("\r\n") {
 			}
+			l.discardTokenData()
 		// '/*'
 		case '*':
+			l.nextChar()
 			l.untilMatchSeq("*/")
+			l.discardTokenData()
 		default:
-			l.buildTokenData(ILLEGAL, t)
+			l.buildTokenDataNext(ILLEGAL, t)
 			return
 		}
 	// [ \t\r\n\f]+
 	case ' ', '\t', '\r', '\n', '\f':
-		for l.matchCharInSeq(ch, " \t\r\n\f") {
+		ch = l.nextChar()
+
+		for l.matchCharInSeq(" \t\r\n\f") {
 		}
+		l.discardTokenData()
 	}
 
 	// ~[\]\\\-]
-	if l.notMatchCharInSeq(ch, "]\\-") {
+	if l.notMatchCharInSeq("]\\-") {
 		l.buildTokenData(BASIC_CHAR, t)
 		return
 	}
@@ -217,8 +294,8 @@ func (l *Lexer) charClassNextToken(ch rune, t *Token) {
 			// HEX_DIGIT+
 			l.markPos()
 			matched := false
-			for l.matchCharRange(ch, 'A', 'F') || l.matchCharRange(ch, 'a', 'f') ||
-				l.matchCharRange(ch, '0', '9') {
+			for l.matchCharInRange('A', 'F') || l.matchCharInRange('a', 'f') ||
+				l.matchCharInRange('0', '9') {
 				matched = true
 			}
 			if matched {
@@ -228,38 +305,38 @@ func (l *Lexer) charClassNextToken(ch rune, t *Token) {
 
 			// '{'
 			l.resetPos()
-			if !l.matchChar(ch, '{') {
-				l.buildTokenData(ILLEGAL, t)
+			if !l.matchChar('{') {
+				l.buildTokenDataNext(ILLEGAL, t)
 				break
 			}
 
 			// HEX_DIGIT+
 			matched = false
-			for l.matchCharRange(ch, 'A', 'F') || l.matchCharRange(ch, 'a', 'f') ||
-				l.matchCharRange(ch, '0', '9') {
+			for l.matchCharInRange('A', 'F') || l.matchCharInRange('a', 'f') ||
+				l.matchCharInRange('0', '9') {
 				matched = true
 			}
 			if !matched {
-				l.buildTokenData(ILLEGAL, t)
+				l.buildTokenDataNext(ILLEGAL, t)
 				break
 			}
 
-			if !l.matchChar(ch, '}') {
-				l.buildTokenData(ILLEGAL, t)
+			if !l.matchChar('}') {
+				l.buildTokenDataNext(ILLEGAL, t)
 				break
 			}
 
 			l.buildTokenData(UNICODE_ESCAPE_CHAR, t)
 		default:
-			l.buildTokenData(ESCAPE_CHAR, t)
+			l.buildTokenDataNext(ESCAPE_CHAR, t)
 		}
 	case '-':
-		l.buildToken(DASH, t)
+		l.buildTokenNext(DASH, t)
 	case ']':
-		l.buildToken(RBRACK, t)
+		l.buildTokenNext(RBRACK, t)
 		l.mode = REGULAR
 	default:
-		l.buildTokenData(ILLEGAL, t)
+		l.buildTokenDataNext(ILLEGAL, t)
 	}
 }
 
@@ -279,46 +356,54 @@ func (l *Lexer) NextToken(t *Token) {
 		switch ch {
 		// '//'
 		case '/':
+			l.nextChar()
+
 			// ~[\r\n]*
-			for l.notMatchCharInSeq(ch, "\r\n") {
+			for l.notMatchCharInSeq("\r\n") {
 			}
+			l.discardTokenData()
 		// '/*'
 		case '*':
+			l.nextChar()
 			l.untilMatchSeq("*/")
+			l.discardTokenData()
 		default:
-			l.buildTokenData(ILLEGAL, t)
+			l.buildTokenDataNext(ILLEGAL, t)
 			return
 		}
 	// [ \t\r\n\f]+
 	case ' ', '\t', '\r', '\n', '\f':
-		for l.matchCharInSeq(ch, " \t\r\n\f") {
+		ch = l.nextChar()
+
+		for l.matchCharInSeq(" \t\r\n\f") {
 		}
+		l.discardTokenData()
 	}
 
-	if l.processRuleName(ch, t) {
+	if l.processRuleName(t) {
 		return
 	}
-	if l.processTokenName(ch, t) {
+	if l.processTokenName(t) {
 		return
 	}
 
 	switch ch {
 	case '\'':
-		ch = l.nextChar()
+		l.nextChar()
 
 		// ('\\\'' | ~'\'')+
 		matched := false
-		for l.matchSeq("\\'") || l.notMatchChar(ch, '\\') {
+		for l.matchSeq("\\'") || l.notMatchChar('\\') {
 			matched = true
 		}
 		if !matched {
-			l.buildTokenData(ILLEGAL, t)
+			l.buildTokenDataNext(ILLEGAL, t)
 			return
 		}
 
 		// '\''
-		if ch != '\'' {
-			l.buildTokenData(ILLEGAL, t)
+		if !l.matchChar('\'') {
+			l.buildTokenDataNext(ILLEGAL, t)
 			return
 		}
 
@@ -327,38 +412,38 @@ func (l *Lexer) NextToken(t *Token) {
 		ch = l.nextChar()
 
 		// '>'
-		if ch != '>' {
-			l.buildTokenData(ILLEGAL, t)
+		if !l.matchChar('>') {
+			l.buildTokenDataNext(ILLEGAL, t)
 			return
 		}
 
 		l.buildToken(RARROW, t)
 	case '.':
-		l.buildToken(DOT, t)
+		l.buildTokenNext(DOT, t)
 	case ':':
-		l.buildToken(COLON, t)
+		l.buildTokenNext(COLON, t)
 	case ';':
-		l.buildToken(SEMI, t)
+		l.buildTokenNext(SEMI, t)
 	case '|':
-		l.buildToken(PIPE, t)
+		l.buildTokenNext(PIPE, t)
 	case '(':
-		l.buildToken(LPAREN, t)
+		l.buildTokenNext(LPAREN, t)
 	case ')':
-		l.buildToken(RPAREN, t)
+		l.buildTokenNext(RPAREN, t)
 	case '+':
-		l.buildToken(PLUS, t)
+		l.buildTokenNext(PLUS, t)
 	case '*':
-		l.buildToken(STAR, t)
+		l.buildTokenNext(STAR, t)
 	case '?':
-		l.buildToken(QUEST_MARK, t)
+		l.buildTokenNext(QUEST_MARK, t)
 	case '~':
-		l.buildToken(TILDE, t)
+		l.buildTokenNext(TILDE, t)
 	case ',':
-		l.buildToken(COMMA, t)
+		l.buildTokenNext(COMMA, t)
 	case '[':
-		l.buildToken(LBRACK, t)
+		l.buildTokenNext(LBRACK, t)
 	default:
-		l.buildTokenData(ILLEGAL, t)
+		l.buildTokenDataNext(ILLEGAL, t)
 		l.mode = CHAR_CLASS
 	}
 }
