@@ -1,6 +1,11 @@
 package lexer
 
-import "unicode/utf8"
+import (
+	"io"
+	"io/ioutil"
+	"os"
+	"unicode/utf8"
+)
 
 const (
 	eof rune = '\uffff'
@@ -13,20 +18,44 @@ type TokenType int
 type Token struct {
 	Type               TokenType
 	Data               string
-	StartRow, StartCol int
-	EndRow, EndCol     int
+	StartCol, StartRow int32
+	EndCol, EndRow     int32
 }
 
 type Lexer struct {
-	pos, tokenMark, mark                                 int
-	currCh                                               rune
-	input                                                []byte
-	startCol, endCol, startRow, endRow, markCol, markRow int
+	pos, nextPos, tokenStart, mark, markNext       int
+	col, row, startCol, startRow, markCol, markRow int32
+	currCh                                         rune
+	input                                          []byte
 }
 
-func (l *Lexer) readChar() (ch rune) {
-	size := 1
-	ch = rune(l.input[l.pos])
+func NewFromString(input string) *Lexer {
+	l := &Lexer{input: []byte(input), col: 0, row: 1, startCol: 1, startRow: 1}
+	l.NextChar()
+	return l
+}
+
+func NewFromReader(r io.Reader) (*Lexer, error) {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	l := &Lexer{input: b, col: 0, row: 1, startCol: 1, startRow: 1}
+	l.NextChar()
+	return l, nil
+}
+
+func NewFromFile(filename string) (*Lexer, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return NewFromReader(f)
+}
+
+func (l *Lexer) readChar() (ch rune, size int) {
+	ch, size = rune(l.input[l.pos]), 1
 
 	if ch >= utf8.RuneSelf {
 		// Is not a single byte wide, so fallback to full UTF8 decode
@@ -36,7 +65,7 @@ func (l *Lexer) readChar() (ch rune) {
 				// TODO: record illegal encoding error
 				ch = err
 			} else {
-				// TODO: record error and return EOF???
+				// TODO: record error
 				ch = err
 			}
 			return
@@ -47,7 +76,6 @@ func (l *Lexer) readChar() (ch rune) {
 		}
 	}
 
-	l.pos += size
 	return
 }
 
@@ -56,20 +84,43 @@ func (l *Lexer) CurrChar() rune {
 }
 
 func (l *Lexer) NextChar() rune {
-	return eof
+	// Are we done?
+	if l.nextPos >= len(l.input) {
+		l.currCh = eof
+		return l.currCh
+	}
+
+	// Did we reach end of line on prev char?
+	if l.currCh == '\n' {
+		l.row++
+		l.col = 1
+	} else {
+		l.col++
+	}
+
+	l.pos = l.nextPos
+
+	ch, size := l.readChar()
+	l.currCh = ch
+
+	l.nextPos += size
+	return ch
 }
 
 func (l *Lexer) MarkPos() {
-	l.mark = l.pos
+	l.mark, l.markNext, l.markCol, l.markRow = l.pos, l.nextPos, l.col, l.row
 }
 
 func (l *Lexer) ResetPos() {
-	l.pos = l.mark
+	l.pos, l.nextPos, l.col, l.row = l.mark, l.markNext, l.markCol, l.markRow
 }
 
 func (l *Lexer) BuildToken(tt TokenType, t *Token) {
 	t.Type = tt
-	l.tokenMark = l.pos
+	t.StartRow, t.EndRow = l.startRow, l.row
+	t.StartCol, t.EndCol = l.startCol, l.col
+
+	l.DiscardTokenData()
 }
 
 func (l *Lexer) BuildTokenNext(tt TokenType, t *Token) {
@@ -78,9 +129,8 @@ func (l *Lexer) BuildTokenNext(tt TokenType, t *Token) {
 }
 
 func (l *Lexer) BuildTokenData(tt TokenType, t *Token) {
-	t.Type = tt
-	t.Data = "" // TODO
-	l.tokenMark = l.pos
+	t.Data = string(l.input[l.tokenStart:l.pos])
+	l.BuildToken(tt, t)
 }
 
 func (l *Lexer) BuildTokenDataNext(tt TokenType, t *Token) {
@@ -89,7 +139,7 @@ func (l *Lexer) BuildTokenDataNext(tt TokenType, t *Token) {
 }
 
 func (l *Lexer) DiscardTokenData() {
-	l.tokenMark = l.pos
+	l.tokenStart, l.startRow, l.startCol = l.pos, l.row, l.col
 }
 
 func (l *Lexer) DiscardTokenDataNext() {
