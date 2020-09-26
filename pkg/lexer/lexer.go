@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	eof rune = '\uffff'
-	err rune = '\ufffe'
+	Eof rune = '\uffff'
+	Err rune = '\ufffe'
 	bom rune = '\ufeff'
 )
 
@@ -18,19 +18,23 @@ type TokenType int
 type Token struct {
 	Type               TokenType
 	Data               string
-	StartCol, StartRow int32
-	EndCol, EndRow     int32
+	StartRow, StartCol int32
+	EndRow, EndCol     int32
 }
 
 type Lexer struct {
-	pos, nextPos, tokenStart, mark, markNext       int
-	col, row, startCol, startRow, markCol, markRow int32
-	currCh                                         rune
-	input                                          []byte
+	pos, nextPos, tokenStart, mark, markNext int
+	row, col, markRow, markCol               int32
+	startRow, startCol, endRow, endCol       int32
+	currCh, markCh                           rune
+	input                                    []byte
 }
 
 func NewFromString(input string) *Lexer {
-	l := &Lexer{input: []byte(input), col: 0, row: 1, startCol: 1, startRow: 1}
+	l := &Lexer{
+		input: []byte(input), row: 1, col: 0, // inc'd first time by NextChar
+		startCol: 1, startRow: 1, endRow: 1, endCol: 1,
+	}
 	l.NextChar()
 	return l
 }
@@ -40,7 +44,9 @@ func NewFromReader(r io.Reader) (*Lexer, error) {
 	if err != nil {
 		return nil, err
 	}
-	l := &Lexer{input: b, col: 0, row: 1, startCol: 1, startRow: 1}
+	l := &Lexer{input: b, row: 1, col: 0, // inc'd first time by NextChar
+		startCol: 1, startRow: 1, endRow: 1, endCol: 1,
+	}
 	l.NextChar()
 	return l, nil
 }
@@ -63,15 +69,15 @@ func (l *Lexer) readChar() (ch rune, size int) {
 		if ch == utf8.RuneError {
 			if size > 0 {
 				// TODO: record illegal encoding error
-				ch = err
+				ch = Err
 			} else {
 				// TODO: record error
-				ch = err
+				ch = Err
 			}
 			return
 		} else if ch == bom && l.pos > 0 {
 			// TODO: record illegal byte order mark
-			ch = err
+			ch = Err
 			return
 		}
 	}
@@ -84,21 +90,22 @@ func (l *Lexer) CurrChar() rune {
 }
 
 func (l *Lexer) NextChar() rune {
-	// Are we done?
-	if l.nextPos >= len(l.input) {
-		l.currCh = eof
-		return l.currCh
-	}
-
 	// Did we reach end of line on prev char?
+	l.endRow, l.endCol = l.row, l.col
 	if l.currCh == '\n' {
 		l.row++
 		l.col = 1
-	} else {
+	} else if l.currCh != Eof {
 		l.col++
 	}
 
 	l.pos = l.nextPos
+
+	// Are we done?
+	if l.nextPos >= len(l.input) {
+		l.currCh = Eof
+		return l.currCh
+	}
 
 	ch, size := l.readChar()
 	l.currCh = ch
@@ -109,16 +116,20 @@ func (l *Lexer) NextChar() rune {
 
 func (l *Lexer) MarkPos() {
 	l.mark, l.markNext, l.markCol, l.markRow = l.pos, l.nextPos, l.col, l.row
+	l.markCh = l.currCh
 }
 
 func (l *Lexer) ResetPos() {
 	l.pos, l.nextPos, l.col, l.row = l.mark, l.markNext, l.markCol, l.markRow
+	l.currCh = l.markCh
 }
+
+// *** Build/Discard token ***
 
 func (l *Lexer) BuildToken(tt TokenType, t *Token) {
 	t.Type = tt
-	t.StartRow, t.EndRow = l.startRow, l.row
-	t.StartCol, t.EndCol = l.startCol, l.col
+	t.StartRow, t.EndRow = l.startRow, l.endRow
+	t.StartCol, t.EndCol = l.startCol, l.endCol
 
 	l.DiscardTokenData()
 }
@@ -147,19 +158,7 @@ func (l *Lexer) DiscardTokenDataNext() {
 	l.DiscardTokenData()
 }
 
-func (l *Lexer) MatchSeq(seq string) bool {
-	l.MarkPos()
-	ch := l.CurrChar()
-
-	for _, c := range seq {
-		if ch != c {
-			l.ResetPos()
-			return false
-		}
-		ch = l.NextChar()
-	}
-	return true
-}
+// *** Matchers ***
 
 func (l *Lexer) MatchChar(char rune) bool {
 	if l.CurrChar() != char {
@@ -170,7 +169,7 @@ func (l *Lexer) MatchChar(char rune) bool {
 	return true
 }
 
-func (l *Lexer) NotMatchChar(char rune) bool {
+func (l *Lexer) MatchCharExcept(char rune) bool {
 	if l.CurrChar() == char {
 		return false
 	}
@@ -189,7 +188,7 @@ func (l *Lexer) MatchCharInRange(start, end rune) bool {
 	return true
 }
 
-func (l *Lexer) NotMatchCharInRange(start, end rune) bool {
+func (l *Lexer) MatchCharExceptInRange(start, end rune) bool {
 	ch := l.CurrChar()
 	if ch >= start && ch <= end {
 		return false
@@ -211,7 +210,7 @@ func (l *Lexer) MatchCharInSeq(seq string) bool {
 	return false
 }
 
-func (l *Lexer) NotMatchCharInSeq(seq string) bool {
+func (l *Lexer) MatchCharExceptInSeq(seq string) bool {
 	ch := l.CurrChar()
 
 	for _, c := range seq {
@@ -224,15 +223,31 @@ func (l *Lexer) NotMatchCharInSeq(seq string) bool {
 	return true
 }
 
+func (l *Lexer) MatchSeq(seq string) bool {
+	l.MarkPos()
+	ch := l.CurrChar()
+
+	for _, c := range seq {
+		if ch != c {
+			l.ResetPos()
+			return false
+		}
+		ch = l.NextChar()
+	}
+	return true
+}
+
 func (l *Lexer) MatchUntilSeq(seq string) {
 outer:
-	for ch := l.CurrChar(); ch != eof; ch = l.NextChar() {
+	for ch := l.CurrChar(); ch != Eof; ch = l.NextChar() {
+		l.MarkPos()
 		for _, c := range seq {
 			if c != ch {
 				continue outer
 			}
 			ch = l.NextChar()
 		}
+		l.ResetPos() // We don't match the chars in the seq itself
 		break
 	}
 }

@@ -121,7 +121,7 @@ func (l *Tokenizer) charClassNextToken(ch rune, t *lexer.Token) {
 			l.NextChar()
 
 			// ~[\r\n]*
-			for l.NotMatchCharInSeq("\r\n") {
+			for l.MatchCharExceptInSeq("\r\n") {
 			}
 			l.DiscardTokenData()
 		// '/*'
@@ -143,7 +143,7 @@ func (l *Tokenizer) charClassNextToken(ch rune, t *lexer.Token) {
 	}
 
 	// ~[\]\\\-]
-	if l.NotMatchCharInSeq("]\\-") {
+	if l.MatchCharExceptInSeq("]\\-") {
 		l.BuildTokenData(BASIC_CHAR, t)
 		return
 	}
@@ -222,7 +222,7 @@ func (l *Tokenizer) NextToken(t *lexer.Token) {
 			l.NextChar()
 
 			// ~[\r\n]*
-			for l.NotMatchCharInSeq("\r\n") {
+			for l.MatchCharExceptInSeq("\r\n") {
 			}
 			l.DiscardTokenData()
 		// '/*'
@@ -256,7 +256,7 @@ func (l *Tokenizer) NextToken(t *lexer.Token) {
 
 		// ('\\\'' | ~'\'')+
 		matched := false
-		for l.MatchSeq("\\'") || l.NotMatchChar('\\') {
+		for l.MatchSeq("\\'") || l.MatchCharExcept('\\') {
 			matched = true
 		}
 		if !matched {
