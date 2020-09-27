@@ -25,7 +25,7 @@ type ParserNode interface {
 }
 
 type ParserAlternatives struct {
-	Rules []ParserNode
+	Rules [][]ParserNode
 }
 
 func (p *ParserAlternatives) ParserNode() {}

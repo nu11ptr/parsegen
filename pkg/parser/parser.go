@@ -61,26 +61,34 @@ func (p *Parser) MatchTokenOrRollback(tt lexer.TokenType, oldPos int) *lexer.Tok
 type NewParseGenParser struct {
 	p *Parser
 
-	topLevelMap  map[int]*ast.TopLevel
-	parseRuleMap map[int]*ast.ParserRule
-	ruleBodyMap  map[int]*ast.ParserAlternatives
+	topLevelMap     map[int]*ast.TopLevel
+	parseRuleMap    map[int]*ast.ParserRule
+	ruleBodyMap     map[int]*ast.ParserAlternatives
+	ruleBodySub1Map map[int]*ruleBodySub1
 }
 
 func NewParseGen(p *Parser) *NewParseGenParser {
 	return &NewParseGenParser{
-		p:            p,
-		topLevelMap:  make(map[int]*ast.TopLevel, 8),
-		parseRuleMap: make(map[int]*ast.ParserRule, 8),
-		ruleBodyMap:  make(map[int]*ast.ParserAlternatives, 8),
+		p:               p,
+		topLevelMap:     make(map[int]*ast.TopLevel, 8),
+		parseRuleMap:    make(map[int]*ast.ParserRule, 8),
+		ruleBodyMap:     make(map[int]*ast.ParserAlternatives, 8),
+		ruleBodySub1Map: make(map[int]*ruleBodySub1, 8),
 	}
 }
 
+// *** top_level ***
+
 func (p *NewParseGenParser) memoParseTopLevel() *ast.TopLevel {
-	topLevel, ok := p.topLevelMap[p.p.Pos()]
+	pos := p.p.Pos()
+	topLevel, ok := p.topLevelMap[pos]
 	if ok {
 		return topLevel
 	}
-	return p.ParseTopLevel()
+	topLevel = p.ParseTopLevel()
+	// Memoize what we did here in case this exact rule/position is needed again
+	p.topLevelMap[pos] = topLevel
+	return topLevel
 }
 
 // ParseTopLevel parses the "top_level" parser rule
@@ -104,18 +112,21 @@ func (p *NewParseGenParser) ParseTopLevel() *ast.TopLevel {
 		return nil
 	}
 
-	topLevel := ast.NewTopLevel(parseRules)
-	// Memoize what we did here in case this exact rule/position is needed again
-	p.topLevelMap[oldPos] = topLevel
-	return topLevel
+	return ast.NewTopLevel(parseRules)
 }
 
+// *** parse_rule ***
+
 func (p *NewParseGenParser) memoParseParseRule() *ast.ParserRule {
-	parseRule, ok := p.parseRuleMap[p.p.Pos()]
+	pos := p.p.Pos()
+	parseRule, ok := p.parseRuleMap[pos]
 	if ok {
 		return parseRule
 	}
-	return p.ParseParseRule()
+	parseRule = p.ParseParseRule()
+	// Memoize what we did here in case this exact rule/position is needed again
+	p.parseRuleMap[pos] = parseRule
+	return parseRule
 }
 
 // ParseParseRule parses the "parse_rule" parser rule
@@ -149,21 +160,117 @@ func (p *NewParseGenParser) ParseParseRule() *ast.ParserRule {
 		return nil
 	}
 
-	parseRule := &ast.ParserRule{ruleNameTok.Data, ruleBody}
-	// Memoize what we did here in case this exact rule/position is needed again
-	p.parseRuleMap[oldPos] = parseRule
-	return parseRule
+	return &ast.ParserRule{ruleNameTok.Data, ruleBody}
 }
 
+// *** rule_body ***
+
 func (p *NewParseGenParser) memoParseRuleBody() *ast.ParserAlternatives {
-	ruleBody, ok := p.ruleBodyMap[p.p.Pos()]
+	pos := p.p.Pos()
+	ruleBody, ok := p.ruleBodyMap[pos]
 	if ok {
 		return ruleBody
 	}
-	return p.ParseRuleBody()
+	ruleBody = p.ParseRuleBody()
+	// Memoize what we did here in case this exact rule/position is needed again
+	p.ruleBodyMap[pos] = ruleBody
+	return ruleBody
 }
 
 // ParseRuleBody parses the "rule_body" parser rule
 func (p *NewParseGenParser) ParseRuleBody() *ast.ParserAlternatives {
+	// Rule can fail - might need to rollback
+	oldPos := p.p.Pos()
+
+	// ### rule_sect+ ###
+	ruleSects := []ast.ParserNode{}
+	matched := false
+	for {
+		ruleSect := p.memoParseRuleSect()
+		if ruleSect == nil {
+			break
+		}
+		matched = true
+		ruleSects = append(ruleSects, ruleSect)
+	}
+	if !matched {
+		// Failed - rollback
+		p.p.SetPos(oldPos)
+		return nil
+	}
+
+	// ### ('|' rule_sect+)* ###
+	ruleBodySub1s := []*ruleBodySub1{}
+	for {
+		ruleBodySub1 := p.memoParseRuleBodySub1()
+		if ruleBodySub1 == nil {
+			break
+		}
+		ruleBodySub1s = append(ruleBodySub1s, ruleBodySub1)
+	}
+
+	parserNodes := [][]ast.ParserNode{ruleSects}
+	for _, node := range ruleBodySub1s {
+		parserNodes = append(parserNodes, node.ruleSects)
+	}
+	return &ast.ParserAlternatives{Rules: parserNodes}
+}
+
+// *** rule_body (sub 1) ***
+
+type ruleBodySub1 struct {
+	pipeTok   *lexer.Token
+	ruleSects []ast.ParserNode
+}
+
+func (p *NewParseGenParser) memoParseRuleBodySub1() *ruleBodySub1 {
+	pos := p.p.Pos()
+	ruleBodySub1, ok := p.ruleBodySub1Map[pos]
+	if ok {
+		return ruleBodySub1
+	}
+	ruleBodySub1 = p.ParseRuleBodySub1()
+	// Memoize what we did here in case this exact rule/position is needed again
+	p.ruleBodySub1Map[pos] = ruleBodySub1
+	return ruleBodySub1
+}
+
+func (p *NewParseGenParser) ParseRuleBodySub1() *ruleBodySub1 {
+	// Rule can fail - might need to rollback
+	oldPos := p.p.Pos()
+
+	// ### '|' ###
+	pipeTok := p.p.MatchTokenOrRollback(token.PIPE, oldPos)
+	if pipeTok == nil {
+		return nil
+	}
+
+	// ### rule_sect+ ###
+	ruleSects := []ast.ParserNode{}
+	matched := false
+	for {
+		ruleSect := p.memoParseRuleSect()
+		if ruleSect == nil {
+			break
+		}
+		matched = true
+		ruleSects = append(ruleSects, ruleSect)
+	}
+	if !matched {
+		// Failed - rollback
+		p.p.SetPos(oldPos)
+		return nil
+	}
+
+	return &ruleBodySub1{pipeTok: pipeTok, ruleSects: ruleSects}
+}
+
+// *** rule_select ***
+
+func (p *NewParseGenParser) memoParseRuleSect() ast.ParserNode {
+	return nil
+}
+
+func (p *NewParseGenParser) ParseRuleSect() ast.ParserNode {
 	return nil
 }

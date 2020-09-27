@@ -16,7 +16,10 @@ rule_body: rule_sect+ ('|' rule_sect+)*;
 rule_sect: rule_part suffix?;
 
 rule_part
-	: ('(' rule_body ')' | RULE_NAME | TOKEN_NAME | TOKEN_LIT)
+	: '(' rule_body ')'
+	| RULE_NAME
+	| TOKEN_NAME
+	| TOKEN_LIT
 	;
 
 suffix: '+' | '*' | '?';
