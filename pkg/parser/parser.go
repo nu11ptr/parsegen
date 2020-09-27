@@ -9,7 +9,6 @@ import (
 type Parser struct {
 	t      lexer.Tokenizer
 	tokens []lexer.Token
-	curr   *lexer.Token
 	pos    int
 }
 
@@ -26,11 +25,10 @@ func (p *Parser) Pos() int {
 
 func (p *Parser) SetPos(pos int) {
 	p.pos = pos
-	p.curr = &p.tokens[pos]
 }
 
 func (p *Parser) CurrToken() *lexer.Token {
-	return p.curr
+	return &p.tokens[p.pos]
 }
 
 func (p *Parser) NextToken() *lexer.Token {
@@ -44,8 +42,18 @@ func (p *Parser) NextToken() *lexer.Token {
 	var tok lexer.Token
 	p.t.NextToken(&tok)
 	p.tokens = append(p.tokens, tok)
-	p.curr = &p.tokens[0]
-	return p.curr
+	return &p.tokens[0]
+}
+
+func (p *Parser) MatchTokenOrRollback(tt lexer.TokenType, oldPos int) *lexer.Token {
+	tok := p.CurrToken()
+	if tok.Type != tt {
+		// Failed - rollback
+		p.SetPos(oldPos)
+		return nil
+	}
+	p.NextToken()
+	return tok
 }
 
 // *** Below will be automatically generated
@@ -91,13 +99,10 @@ func (p *NewParseGenParser) ParseTopLevel() *ast.TopLevel {
 	}
 
 	// ### EOF ###
-	eofTok := p.p.CurrToken()
-	if eofTok.Type != token.EOF {
-		// Rule failed - rollback
-		p.p.SetPos(oldPos)
+	eofTok := p.p.MatchTokenOrRollback(token.EOF, oldPos)
+	if eofTok == nil {
 		return nil
 	}
-	p.p.NextToken()
 
 	topLevel := ast.NewTopLevel(parseRules)
 	// Memoize what we did here in case this exact rule/position is needed again
@@ -119,22 +124,16 @@ func (p *NewParseGenParser) ParseParseRule() *ast.ParserRule {
 	oldPos := p.p.Pos()
 
 	// ### RULE_NAME ###
-	ruleNameTok := p.p.CurrToken()
-	if ruleNameTok.Type != token.RULE_NAME {
-		// Rule failed - rollback
-		p.p.SetPos(oldPos)
+	ruleNameTok := p.p.MatchTokenOrRollback(token.RULE_NAME, oldPos)
+	if ruleNameTok == nil {
 		return nil
 	}
-	p.p.NextToken()
 
 	// ### ':' ###
-	colonTok := p.p.CurrToken()
-	if colonTok.Type != token.COLON {
-		// Rule failed - rollback
-		p.p.SetPos(oldPos)
+	colonTok := p.p.MatchTokenOrRollback(token.COLON, oldPos)
+	if colonTok == nil {
 		return nil
 	}
-	p.p.NextToken()
 
 	// ### rule_body ###
 	ruleBody := p.memoParseRuleBody()
@@ -145,15 +144,13 @@ func (p *NewParseGenParser) ParseParseRule() *ast.ParserRule {
 	}
 
 	// ### ';' ###
-	semiTok := p.p.CurrToken()
-	if semiTok.Type != token.SEMI {
-		// Rule failed - rollback
-		p.p.SetPos(oldPos)
+	semiTok := p.p.MatchTokenOrRollback(token.SEMI, oldPos)
+	if semiTok == nil {
 		return nil
 	}
-	p.p.NextToken()
 
 	parseRule := &ast.ParserRule{ruleNameTok.Data, ruleBody}
+	// Memoize what we did here in case this exact rule/position is needed again
 	p.parseRuleMap[oldPos] = parseRule
 	return parseRule
 }
