@@ -104,6 +104,6 @@ func TestLexer(t *testing.T) {
 	})
 
 	t.Run("Match EOF", func(t *testing.T) {
-		assert.Equal(t, lex.CurrChar(), lexer.Eof)
+		assert.Equal(t, lex.CurrChar(), lexer.EOF)
 	})
 }
