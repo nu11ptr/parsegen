@@ -70,243 +70,243 @@ type Tokenizer struct {
 	mode Mode
 }
 
-func (l *Tokenizer) processRuleName(t *lexer.Token) bool {
+func (t *Tokenizer) processRuleName(tok *lexer.Token) bool {
 	// [a-z]
-	if !l.MatchCharInRange('a', 'z') {
+	if !t.MatchCharInRange('a', 'z') {
 		return false
 	}
 
 	// [A-Za-z0-9_]*
-	for l.MatchCharInRange('A', 'Z') || l.MatchCharInRange('a', 'z') ||
-		l.MatchCharInRange('0', '9') || l.MatchChar('_') {
+	for t.MatchCharInRange('A', 'Z') || t.MatchCharInRange('a', 'z') ||
+		t.MatchCharInRange('0', '9') || t.MatchChar('_') {
 	}
 
-	l.BuildTokenData(RULE_NAME, t)
+	t.BuildTokenData(RULE_NAME, tok)
 
 	// Possible conflicting keyword
-	tt, ok := keywords[t.Data]
+	tt, ok := keywords[tok.Data]
 	if ok {
-		t.Type = tt
-		t.Data = ""
+		tok.Type = tt
+		tok.Data = ""
 	}
 
 	return true
 }
 
-func (l *Tokenizer) processTokenName(t *lexer.Token) bool {
+func (t *Tokenizer) processTokenName(tok *lexer.Token) bool {
 	// [A-Z]
-	if !l.MatchCharInRange('A', 'Z') {
+	if !t.MatchCharInRange('A', 'Z') {
 		return false
 	}
 
 	// [A-Za-z0-9_]*
-	for l.MatchCharInRange('A', 'Z') || l.MatchCharInRange('a', 'z') ||
-		l.MatchCharInRange('0', '9') || l.MatchChar('_') {
+	for t.MatchCharInRange('A', 'Z') || t.MatchCharInRange('a', 'z') ||
+		t.MatchCharInRange('0', '9') || t.MatchChar('_') {
 	}
 
-	l.BuildTokenData(TOKEN_NAME, t)
+	t.BuildTokenData(TOKEN_NAME, tok)
 
 	return true
 }
 
-func (l *Tokenizer) charClassNextToken(ch rune, t *lexer.Token) {
+func (t *Tokenizer) charClassNextToken(ch rune, tok *lexer.Token) {
 	// Skip
 	switch ch {
 	case '/':
-		ch = l.NextChar()
+		ch = t.NextChar()
 
 		switch ch {
 		// '//'
 		case '/':
-			l.NextChar()
+			t.NextChar()
 
 			// ~[\r\n]*
-			for l.MatchCharExceptInSeq("\r\n") {
+			for t.MatchCharExceptInSeq("\r\n") {
 			}
-			l.DiscardTokenData()
+			t.DiscardTokenData()
 		// '/*'
 		case '*':
-			l.NextChar()
-			l.MatchUntilSeq("*/")
-			l.DiscardTokenData()
+			t.NextChar()
+			t.MatchUntilSeq("*/")
+			t.DiscardTokenData()
 		default:
-			l.BuildTokenDataNext(ILLEGAL, t)
+			t.BuildTokenDataNext(ILLEGAL, tok)
 			return
 		}
 	// [ \t\r\n\f]+
 	case ' ', '\t', '\r', '\n', '\f':
-		ch = l.NextChar()
+		ch = t.NextChar()
 
-		for l.MatchCharInSeq(" \t\r\n\f") {
+		for t.MatchCharInSeq(" \t\r\n\f") {
 		}
-		l.DiscardTokenData()
+		t.DiscardTokenData()
 	}
 
 	// ~[\]\\\-]
-	if l.MatchCharExceptInSeq("]\\-") {
-		l.BuildTokenData(BASIC_CHAR, t)
+	if t.MatchCharExceptInSeq("]\\-") {
+		t.BuildTokenData(BASIC_CHAR, tok)
 		return
 	}
 
 	switch ch {
 	case '\\':
-		ch = l.NextChar()
+		ch = t.NextChar()
 
 		switch ch {
 		case 'u':
 			// HEX_DIGIT+
-			l.MarkPos()
+			t.MarkPos()
 			matched := false
-			for l.MatchCharInRange('A', 'F') || l.MatchCharInRange('a', 'f') ||
-				l.MatchCharInRange('0', '9') {
+			for t.MatchCharInRange('A', 'F') || t.MatchCharInRange('a', 'f') ||
+				t.MatchCharInRange('0', '9') {
 				matched = true
 			}
 			if matched {
-				l.BuildTokenData(UNICODE_ESCAPE_CHAR, t)
+				t.BuildTokenData(UNICODE_ESCAPE_CHAR, tok)
 				break
 			}
 
 			// '{'
-			l.ResetPos()
-			if !l.MatchChar('{') {
-				l.BuildTokenDataNext(ILLEGAL, t)
+			t.ResetPos()
+			if !t.MatchChar('{') {
+				t.BuildTokenDataNext(ILLEGAL, tok)
 				break
 			}
 
 			// HEX_DIGIT+
 			matched = false
-			for l.MatchCharInRange('A', 'F') || l.MatchCharInRange('a', 'f') ||
-				l.MatchCharInRange('0', '9') {
+			for t.MatchCharInRange('A', 'F') || t.MatchCharInRange('a', 'f') ||
+				t.MatchCharInRange('0', '9') {
 				matched = true
 			}
 			if !matched {
-				l.BuildTokenDataNext(ILLEGAL, t)
+				t.BuildTokenDataNext(ILLEGAL, tok)
 				break
 			}
 
-			if !l.MatchChar('}') {
-				l.BuildTokenDataNext(ILLEGAL, t)
+			if !t.MatchChar('}') {
+				t.BuildTokenDataNext(ILLEGAL, tok)
 				break
 			}
 
-			l.BuildTokenData(UNICODE_ESCAPE_CHAR, t)
+			t.BuildTokenData(UNICODE_ESCAPE_CHAR, tok)
 		default:
-			l.BuildTokenDataNext(ESCAPE_CHAR, t)
+			t.BuildTokenDataNext(ESCAPE_CHAR, tok)
 		}
 	case '-':
-		l.BuildTokenNext(DASH, t)
+		t.BuildTokenNext(DASH, tok)
 	case ']':
-		l.BuildTokenNext(RBRACK, t)
-		l.mode = REGULAR
+		t.BuildTokenNext(RBRACK, tok)
+		t.mode = REGULAR
 	default:
-		l.BuildTokenDataNext(ILLEGAL, t)
+		t.BuildTokenDataNext(ILLEGAL, tok)
 	}
 }
 
-func (l *Tokenizer) NextToken(t *lexer.Token) {
-	ch := l.CurrChar()
+func (t *Tokenizer) NextToken(tok *lexer.Token) {
+	ch := t.CurrChar()
 
-	if l.mode == CHAR_CLASS {
-		l.charClassNextToken(ch, t)
+	if t.mode == CHAR_CLASS {
+		t.charClassNextToken(ch, tok)
 		return
 	}
 
 	// Skip
 	switch ch {
 	case '/':
-		ch = l.NextChar()
+		ch = t.NextChar()
 
 		switch ch {
 		// '//'
 		case '/':
-			l.NextChar()
+			t.NextChar()
 
 			// ~[\r\n]*
-			for l.MatchCharExceptInSeq("\r\n") {
+			for t.MatchCharExceptInSeq("\r\n") {
 			}
-			l.DiscardTokenData()
+			t.DiscardTokenData()
 		// '/*'
 		case '*':
-			l.NextChar()
-			l.MatchUntilSeq("*/")
-			l.DiscardTokenData()
+			t.NextChar()
+			t.MatchUntilSeq("*/")
+			t.DiscardTokenData()
 		default:
-			l.BuildTokenDataNext(ILLEGAL, t)
+			t.BuildTokenDataNext(ILLEGAL, tok)
 			return
 		}
 	// [ \t\r\n\f]+
 	case ' ', '\t', '\r', '\n', '\f':
-		ch = l.NextChar()
+		ch = t.NextChar()
 
-		for l.MatchCharInSeq(" \t\r\n\f") {
+		for t.MatchCharInSeq(" \t\r\n\f") {
 		}
-		l.DiscardTokenData()
+		t.DiscardTokenData()
 	}
 
-	if l.processRuleName(t) {
+	if t.processRuleName(tok) {
 		return
 	}
-	if l.processTokenName(t) {
+	if t.processTokenName(tok) {
 		return
 	}
 
 	switch ch {
 	case '\'':
-		l.NextChar()
+		t.NextChar()
 
 		// ('\\\'' | ~'\'')+
 		matched := false
-		for l.MatchSeq("\\'") || l.MatchCharExcept('\\') {
+		for t.MatchSeq("\\'") || t.MatchCharExcept('\\') {
 			matched = true
 		}
 		if !matched {
-			l.BuildTokenDataNext(ILLEGAL, t)
+			t.BuildTokenDataNext(ILLEGAL, tok)
 			return
 		}
 
 		// '\''
-		if !l.MatchChar('\'') {
-			l.BuildTokenDataNext(ILLEGAL, t)
+		if !t.MatchChar('\'') {
+			t.BuildTokenDataNext(ILLEGAL, tok)
 			return
 		}
 
-		l.BuildToken(TOKEN_LIT, t)
+		t.BuildToken(TOKEN_LIT, tok)
 	case '-':
-		ch = l.NextChar()
+		ch = t.NextChar()
 
 		// '>'
-		if !l.MatchChar('>') {
-			l.BuildTokenDataNext(ILLEGAL, t)
+		if !t.MatchChar('>') {
+			t.BuildTokenDataNext(ILLEGAL, tok)
 			return
 		}
 
-		l.BuildToken(RARROW, t)
+		t.BuildToken(RARROW, tok)
 	case '.':
-		l.BuildTokenNext(DOT, t)
+		t.BuildTokenNext(DOT, tok)
 	case ':':
-		l.BuildTokenNext(COLON, t)
+		t.BuildTokenNext(COLON, tok)
 	case ';':
-		l.BuildTokenNext(SEMI, t)
+		t.BuildTokenNext(SEMI, tok)
 	case '|':
-		l.BuildTokenNext(PIPE, t)
+		t.BuildTokenNext(PIPE, tok)
 	case '(':
-		l.BuildTokenNext(LPAREN, t)
+		t.BuildTokenNext(LPAREN, tok)
 	case ')':
-		l.BuildTokenNext(RPAREN, t)
+		t.BuildTokenNext(RPAREN, tok)
 	case '+':
-		l.BuildTokenNext(PLUS, t)
+		t.BuildTokenNext(PLUS, tok)
 	case '*':
-		l.BuildTokenNext(STAR, t)
+		t.BuildTokenNext(STAR, tok)
 	case '?':
-		l.BuildTokenNext(QUEST_MARK, t)
+		t.BuildTokenNext(QUEST_MARK, tok)
 	case '~':
-		l.BuildTokenNext(TILDE, t)
+		t.BuildTokenNext(TILDE, tok)
 	case ',':
-		l.BuildTokenNext(COMMA, t)
+		t.BuildTokenNext(COMMA, tok)
 	case '[':
-		l.BuildTokenNext(LBRACK, t)
+		t.BuildTokenNext(LBRACK, tok)
 	default:
-		l.BuildTokenDataNext(ILLEGAL, t)
-		l.mode = CHAR_CLASS
+		t.BuildTokenDataNext(ILLEGAL, tok)
+		t.mode = CHAR_CLASS
 	}
 }
