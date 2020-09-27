@@ -1,6 +1,11 @@
 package ast
 
-type Token int // TODO: Placeholder
+import (
+	"log"
+
+	"github.com/nu11ptr/parsegen/pkg/lexer"
+	"github.com/nu11ptr/parsegen/pkg/token"
+)
 
 type TopLevel struct {
 	ParserRules map[string]*ParserRule
@@ -22,6 +27,20 @@ type ParserRule struct {
 
 type ParserNode interface {
 	ParserNode()
+}
+
+func NewNestedNode(node ParserNode, suffix *lexer.Token) ParserNode {
+	switch suffix.Type {
+	case token.PLUS:
+		return &ParserOneOrMore{Node: node}
+	case token.STAR:
+		return &ParserZeroOrMore{Node: node}
+	case token.QUEST_MARK:
+		return &ParserZeroOrOne{Node: node}
+	default:
+		log.Panicf("Unknown token type: %d", suffix.Type)
+		return nil
+	}
 }
 
 type ParserAlternatives struct {
@@ -61,7 +80,7 @@ type ParserLexerRuleRef struct {
 func (p *ParserLexerRuleRef) ParserNode() {}
 
 type ParserToken struct {
-	Token Token
+	Token *lexer.Token
 }
 
 func (p *ParserToken) ParserNode() {}

@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/nu11ptr/parsegen/pkg/lexer"
+
 type LexerRule struct {
 	Fragment bool
 	Name     string
@@ -47,7 +49,7 @@ type LexerRuleRef struct {
 func (l *LexerRuleRef) LexerNode() {}
 
 type LexerToken struct {
-	Token Token
+	Token *lexer.Token
 }
 
 func (l *LexerToken) LexerNode() {}
