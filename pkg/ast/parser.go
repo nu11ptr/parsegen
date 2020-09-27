@@ -7,9 +7,17 @@ type TopLevel struct {
 	LexerRules  map[string]*LexerRule
 }
 
+func NewTopLevel(rules []*ParserRule) *TopLevel {
+	topLevel := new(TopLevel)
+	for _, rule := range rules {
+		topLevel.ParserRules[rule.Name] = rule
+	}
+	return topLevel
+}
+
 type ParserRule struct {
 	Name  string
-	Rules ParserAlternatives
+	Rules *ParserAlternatives
 }
 
 type ParserNode interface {

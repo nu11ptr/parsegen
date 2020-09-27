@@ -27,6 +27,12 @@ type Token struct {
 	EndRow, EndCol     int32
 }
 
+// A Tokenizer tokenizes an input stream. It typically will use a Lexer as the
+// helper library, but it is not required to do so
+type Tokenizer interface {
+	NextToken(*Token)
+}
+
 // Lexer represents all the internal state needed to perform lexing
 type Lexer struct {
 	pos, nextPos, tokenStart, mark, markNext int
