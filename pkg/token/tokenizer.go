@@ -2,7 +2,9 @@ package token
 
 // *** Potentially Generated ***
 
-import "github.com/nu11ptr/parsegen/pkg/lexer"
+import (
+	"github.com/nu11ptr/parsegen/pkg/lexer"
+)
 
 type Mode int
 
@@ -65,23 +67,27 @@ var (
 )
 
 type ParseGenTokenizer struct {
-	lexer.Lexer
+	lex *lexer.Lexer
 
 	mode Mode
 }
 
+func NewParseGen(lex *lexer.Lexer) *ParseGenTokenizer {
+	return &ParseGenTokenizer{lex: lex, mode: REGULAR}
+}
+
 func (t *ParseGenTokenizer) processRuleName(tok *lexer.Token) bool {
 	// [a-z]
-	if !t.MatchCharInRange('a', 'z') {
+	if !t.lex.MatchCharInRange('a', 'z') {
 		return false
 	}
 
 	// [A-Za-z0-9_]*
-	for t.MatchCharInRange('A', 'Z') || t.MatchCharInRange('a', 'z') ||
-		t.MatchCharInRange('0', '9') || t.MatchChar('_') {
+	for t.lex.MatchCharInRange('A', 'Z') || t.lex.MatchCharInRange('a', 'z') ||
+		t.lex.MatchCharInRange('0', '9') || t.lex.MatchChar('_') {
 	}
 
-	t.BuildTokenData(RULE_NAME, tok)
+	t.lex.BuildTokenData(RULE_NAME, tok)
 
 	// Possible conflicting keyword
 	tt, ok := keywords[tok.Data]
@@ -95,116 +101,115 @@ func (t *ParseGenTokenizer) processRuleName(tok *lexer.Token) bool {
 
 func (t *ParseGenTokenizer) processTokenName(tok *lexer.Token) bool {
 	// [A-Z]
-	if !t.MatchCharInRange('A', 'Z') {
+	if !t.lex.MatchCharInRange('A', 'Z') {
 		return false
 	}
 
 	// [A-Za-z0-9_]*
-	for t.MatchCharInRange('A', 'Z') || t.MatchCharInRange('a', 'z') ||
-		t.MatchCharInRange('0', '9') || t.MatchChar('_') {
+	for t.lex.MatchCharInRange('A', 'Z') || t.lex.MatchCharInRange('a', 'z') ||
+		t.lex.MatchCharInRange('0', '9') || t.lex.MatchChar('_') {
 	}
 
-	t.BuildTokenData(TOKEN_NAME, tok)
+	t.lex.BuildTokenData(TOKEN_NAME, tok)
 
 	return true
 }
 
 func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *lexer.Token) {
 	// Skip
-	switch ch {
-	case '/':
-		ch = t.NextChar()
-
-		switch ch {
-		// '//'
+	skipping := true
+	for skipping {
+		switch t.lex.CurrChar() {
 		case '/':
-			t.NextChar()
+			ch = t.lex.NextChar()
 
-			// ~[\r\n]*
-			for t.MatchCharExceptInSeq("\r\n") {
+			switch ch {
+			// '//'
+			case '/':
+				t.lex.NextChar()
+
+				// ~[\r\n]*
+				for t.lex.MatchCharExceptInSeq("\r\n") {
+				}
+				t.lex.DiscardTokenData()
+			// '/*'
+			case '*':
+				t.lex.NextChar()
+				t.lex.MatchUntilSeq("*/")
+				t.lex.DiscardTokenData()
+			default:
+				t.lex.BuildTokenDataNext(ILLEGAL, tok)
+				return
 			}
-			t.DiscardTokenData()
-		// '/*'
-		case '*':
-			t.NextChar()
-			t.MatchUntilSeq("*/")
-			t.DiscardTokenData()
+		// [ \t\r\n\f]+
+		case ' ', '\t', '\r', '\n', '\f':
+			ch = t.lex.NextChar()
+
+			for t.lex.MatchCharInSeq(" \t\r\n\f") {
+			}
+			t.lex.DiscardTokenData()
 		default:
-			t.BuildTokenDataNext(ILLEGAL, tok)
-			return
+			skipping = false
 		}
-	// [ \t\r\n\f]+
-	case ' ', '\t', '\r', '\n', '\f':
-		ch = t.NextChar()
-
-		for t.MatchCharInSeq(" \t\r\n\f") {
-		}
-		t.DiscardTokenData()
-	}
-
-	// ~[\]\\\-]
-	if t.MatchCharExceptInSeq("]\\-") {
-		t.BuildTokenData(BASIC_CHAR, tok)
-		return
 	}
 
 	switch ch {
 	case '\\':
-		ch = t.NextChar()
+		ch = t.lex.NextChar()
 
 		switch ch {
 		case 'u':
 			// HEX_DIGIT+
-			t.MarkPos()
+			t.lex.MarkPos()
 			matched := false
-			for t.MatchCharInRange('A', 'F') || t.MatchCharInRange('a', 'f') ||
-				t.MatchCharInRange('0', '9') {
+			for t.lex.MatchCharInRange('A', 'F') || t.lex.MatchCharInRange('a', 'f') ||
+				t.lex.MatchCharInRange('0', '9') {
 				matched = true
 			}
 			if matched {
-				t.BuildTokenData(UNICODE_ESCAPE_CHAR, tok)
+				t.lex.BuildTokenData(UNICODE_ESCAPE_CHAR, tok)
 				break
 			}
 
 			// '{'
-			t.ResetPos()
-			if !t.MatchChar('{') {
-				t.BuildTokenDataNext(ILLEGAL, tok)
+			t.lex.ResetPos()
+			if !t.lex.MatchChar('{') {
+				t.lex.BuildTokenDataNext(ILLEGAL, tok)
 				break
 			}
 
 			// HEX_DIGIT+
 			matched = false
-			for t.MatchCharInRange('A', 'F') || t.MatchCharInRange('a', 'f') ||
-				t.MatchCharInRange('0', '9') {
+			for t.lex.MatchCharInRange('A', 'F') || t.lex.MatchCharInRange('a', 'f') ||
+				t.lex.MatchCharInRange('0', '9') {
 				matched = true
 			}
 			if !matched {
-				t.BuildTokenDataNext(ILLEGAL, tok)
+				t.lex.BuildTokenDataNext(ILLEGAL, tok)
 				break
 			}
 
-			if !t.MatchChar('}') {
-				t.BuildTokenDataNext(ILLEGAL, tok)
+			if !t.lex.MatchChar('}') {
+				t.lex.BuildTokenDataNext(ILLEGAL, tok)
 				break
 			}
 
-			t.BuildTokenData(UNICODE_ESCAPE_CHAR, tok)
+			t.lex.BuildTokenData(UNICODE_ESCAPE_CHAR, tok)
 		default:
-			t.BuildTokenDataNext(ESCAPE_CHAR, tok)
+			t.lex.BuildTokenDataNext(ESCAPE_CHAR, tok)
 		}
 	case '-':
-		t.BuildTokenNext(DASH, tok)
+		t.lex.BuildTokenNext(DASH, tok)
 	case ']':
-		t.BuildTokenNext(RBRACK, tok)
+		t.lex.BuildTokenNext(RBRACK, tok)
 		t.mode = REGULAR
 	default:
-		t.BuildTokenDataNext(ILLEGAL, tok)
+		t.lex.BuildTokenDataNext(ILLEGAL, tok)
 	}
 }
 
 func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
-	ch := t.CurrChar()
+	ch := t.lex.CurrChar()
 
 	if t.mode == CHAR_CLASS {
 		t.charClassNextToken(ch, tok)
@@ -212,35 +217,40 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 	}
 
 	// Skip
-	switch ch {
-	case '/':
-		ch = t.NextChar()
-
-		switch ch {
-		// '//'
+	skipping := true
+	for skipping {
+		switch t.lex.CurrChar() {
 		case '/':
-			t.NextChar()
+			ch = t.lex.NextChar()
 
-			// ~[\r\n]*
-			for t.MatchCharExceptInSeq("\r\n") {
+			switch ch {
+			// '//'
+			case '/':
+				t.lex.NextChar()
+
+				// ~[\r\n]*
+				for t.lex.MatchCharExceptInSeq("\r\n") {
+				}
+				t.lex.DiscardTokenData()
+			// '/*'
+			case '*':
+				t.lex.NextChar()
+				t.lex.MatchUntilSeq("*/")
+				t.lex.DiscardTokenData()
+			default:
+				t.lex.BuildTokenDataNext(ILLEGAL, tok)
+				return
 			}
-			t.DiscardTokenData()
-		// '/*'
-		case '*':
-			t.NextChar()
-			t.MatchUntilSeq("*/")
-			t.DiscardTokenData()
-		default:
-			t.BuildTokenDataNext(ILLEGAL, tok)
-			return
-		}
-	// [ \t\r\n\f]+
-	case ' ', '\t', '\r', '\n', '\f':
-		ch = t.NextChar()
+		// [ \t\r\n\f]+
+		case ' ', '\t', '\r', '\n', '\f':
+			ch = t.lex.NextChar()
 
-		for t.MatchCharInSeq(" \t\r\n\f") {
+			for t.lex.MatchCharInSeq(" \t\r\n\f") {
+			}
+			t.lex.DiscardTokenData()
+		default:
+			skipping = false
 		}
-		t.DiscardTokenData()
 	}
 
 	if t.processRuleName(tok) {
@@ -252,61 +262,63 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 
 	switch ch {
 	case '\'':
-		t.NextChar()
+		t.lex.NextChar()
 
 		// ('\\\'' | ~'\'')+
 		matched := false
-		for t.MatchSeq("\\'") || t.MatchCharExcept('\\') {
+		for t.lex.MatchSeq("\\'") || t.lex.MatchCharExcept('\'') {
 			matched = true
 		}
 		if !matched {
-			t.BuildTokenDataNext(ILLEGAL, tok)
+			t.lex.BuildTokenDataNext(ILLEGAL, tok)
 			return
 		}
 
 		// '\''
-		if !t.MatchChar('\'') {
-			t.BuildTokenDataNext(ILLEGAL, tok)
+		if !t.lex.MatchChar('\'') {
+			t.lex.BuildTokenDataNext(ILLEGAL, tok)
 			return
 		}
 
-		t.BuildToken(TOKEN_LIT, tok)
+		t.lex.BuildTokenData(TOKEN_LIT, tok)
 	case '-':
-		ch = t.NextChar()
+		ch = t.lex.NextChar()
 
 		// '>'
-		if !t.MatchChar('>') {
-			t.BuildTokenDataNext(ILLEGAL, tok)
+		if !t.lex.MatchChar('>') {
+			t.lex.BuildTokenDataNext(ILLEGAL, tok)
 			return
 		}
 
-		t.BuildToken(RARROW, tok)
+		t.lex.BuildToken(RARROW, tok)
 	case '.':
-		t.BuildTokenNext(DOT, tok)
+		t.lex.BuildTokenNext(DOT, tok)
 	case ':':
-		t.BuildTokenNext(COLON, tok)
+		t.lex.BuildTokenNext(COLON, tok)
 	case ';':
-		t.BuildTokenNext(SEMI, tok)
+		t.lex.BuildTokenNext(SEMI, tok)
 	case '|':
-		t.BuildTokenNext(PIPE, tok)
+		t.lex.BuildTokenNext(PIPE, tok)
 	case '(':
-		t.BuildTokenNext(LPAREN, tok)
+		t.lex.BuildTokenNext(LPAREN, tok)
 	case ')':
-		t.BuildTokenNext(RPAREN, tok)
+		t.lex.BuildTokenNext(RPAREN, tok)
 	case '+':
-		t.BuildTokenNext(PLUS, tok)
+		t.lex.BuildTokenNext(PLUS, tok)
 	case '*':
-		t.BuildTokenNext(STAR, tok)
+		t.lex.BuildTokenNext(STAR, tok)
 	case '?':
-		t.BuildTokenNext(QUEST_MARK, tok)
+		t.lex.BuildTokenNext(QUEST_MARK, tok)
 	case '~':
-		t.BuildTokenNext(TILDE, tok)
+		t.lex.BuildTokenNext(TILDE, tok)
 	case ',':
-		t.BuildTokenNext(COMMA, tok)
+		t.lex.BuildTokenNext(COMMA, tok)
 	case '[':
-		t.BuildTokenNext(LBRACK, tok)
-	default:
-		t.BuildTokenDataNext(ILLEGAL, tok)
+		t.lex.BuildTokenNext(LBRACK, tok)
 		t.mode = CHAR_CLASS
+	case lexer.EOF:
+		t.lex.BuildToken(EOF, tok)
+	default:
+		t.lex.BuildTokenDataNext(ILLEGAL, tok)
 	}
 }
