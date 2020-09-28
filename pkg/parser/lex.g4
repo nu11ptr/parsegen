@@ -81,11 +81,3 @@ BASIC_CHAR: ~[\]\\\-];
 DASH: '-';
 
 RBRACK: ']' -> popMode;
-
-// *** Skip ***
-
-CC_COMMENT: COMMENT;
-
-CC_ML_COMMENT: ML_COMMENT;
-
-CC_WS: WS;

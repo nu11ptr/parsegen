@@ -3,6 +3,8 @@ package token
 // *** Potentially Generated ***
 
 import (
+	"fmt"
+
 	"github.com/nu11ptr/parsegen/pkg/lexer"
 )
 
@@ -116,49 +118,14 @@ func (t *ParseGenTokenizer) processTokenName(tok *lexer.Token) bool {
 }
 
 func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *lexer.Token) {
-	// Skip
-	skipping := true
-	for skipping {
-		switch t.lex.CurrChar() {
-		case '/':
-			ch = t.lex.NextChar()
-
-			switch ch {
-			// '//'
-			case '/':
-				t.lex.NextChar()
-
-				// ~[\r\n]*
-				for t.lex.MatchCharExceptInSeq("\r\n") {
-				}
-				t.lex.DiscardTokenData()
-			// '/*'
-			case '*':
-				t.lex.NextChar()
-				t.lex.MatchUntilSeq("*/")
-				t.lex.DiscardTokenData()
-			default:
-				t.lex.BuildTokenDataNext(ILLEGAL, tok)
-				return
-			}
-		// [ \t\r\n\f]+
-		case ' ', '\t', '\r', '\n', '\f':
-			ch = t.lex.NextChar()
-
-			for t.lex.MatchCharInSeq(" \t\r\n\f") {
-			}
-			t.lex.DiscardTokenData()
-		default:
-			skipping = false
-		}
-	}
-
 	switch ch {
 	case '\\':
 		ch = t.lex.NextChar()
 
 		switch ch {
 		case 'u':
+			t.lex.NextChar()
+
 			// HEX_DIGIT+
 			t.lex.MarkPos()
 			matched := false
@@ -204,7 +171,7 @@ func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *lexer.Token) {
 		t.lex.BuildTokenNext(RBRACK, tok)
 		t.mode = REGULAR
 	default:
-		t.lex.BuildTokenDataNext(ILLEGAL, tok)
+		t.lex.BuildTokenDataNext(BASIC_CHAR, tok)
 	}
 }
 
@@ -236,6 +203,7 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 			case '*':
 				t.lex.NextChar()
 				t.lex.MatchUntilSeq("*/")
+				t.lex.MatchSeq("*/")
 				t.lex.DiscardTokenData()
 			default:
 				t.lex.BuildTokenDataNext(ILLEGAL, tok)
@@ -319,6 +287,7 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 	case lexer.EOF:
 		t.lex.BuildToken(EOF, tok)
 	default:
+		fmt.Println(t.lex.CurrChar())
 		t.lex.BuildTokenDataNext(ILLEGAL, tok)
 	}
 }
