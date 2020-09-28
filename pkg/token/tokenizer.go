@@ -3,8 +3,6 @@ package token
 // *** Potentially Generated ***
 
 import (
-	"fmt"
-
 	"github.com/nu11ptr/parsegen/pkg/lexer"
 )
 
@@ -120,9 +118,7 @@ func (t *ParseGenTokenizer) processTokenName(tok *lexer.Token) bool {
 func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *lexer.Token) {
 	switch ch {
 	case '\\':
-		ch = t.lex.NextChar()
-
-		switch ch {
+		switch t.lex.NextChar() {
 		case 'u':
 			t.lex.NextChar()
 
@@ -176,10 +172,8 @@ func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *lexer.Token) {
 }
 
 func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
-	ch := t.lex.CurrChar()
-
 	if t.mode == CHAR_CLASS {
-		t.charClassNextToken(ch, tok)
+		t.charClassNextToken(t.lex.CurrChar(), tok)
 		return
 	}
 
@@ -188,9 +182,7 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 	for skipping {
 		switch t.lex.CurrChar() {
 		case '/':
-			ch = t.lex.NextChar()
-
-			switch ch {
+			switch t.lex.NextChar() {
 			// '//'
 			case '/':
 				t.lex.NextChar()
@@ -211,7 +203,7 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 			}
 		// [ \t\r\n\f]+
 		case ' ', '\t', '\r', '\n', '\f':
-			ch = t.lex.NextChar()
+			t.lex.NextChar()
 
 			for t.lex.MatchCharInSeq(" \t\r\n\f") {
 			}
@@ -228,7 +220,7 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 		return
 	}
 
-	switch ch {
+	switch t.lex.CurrChar() {
 	case '\'':
 		t.lex.NextChar()
 
@@ -250,7 +242,7 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 
 		t.lex.BuildTokenData(TOKEN_LIT, tok)
 	case '-':
-		ch = t.lex.NextChar()
+		t.lex.NextChar()
 
 		// '>'
 		if !t.lex.MatchChar('>') {
@@ -287,7 +279,6 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 	case lexer.EOF:
 		t.lex.BuildToken(EOF, tok)
 	default:
-		fmt.Println(t.lex.CurrChar())
 		t.lex.BuildTokenDataNext(ILLEGAL, tok)
 	}
 }
