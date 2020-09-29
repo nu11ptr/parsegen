@@ -1,4 +1,4 @@
-package lexer
+package runtime
 
 import (
 	"io"

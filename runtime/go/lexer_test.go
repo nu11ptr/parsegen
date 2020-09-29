@@ -1,9 +1,9 @@
-package lexer_test
+package runtime_test
 
 import (
 	"testing"
 
-	"github.com/nu11ptr/parsegen/pkg/lexer"
+	runtime "github.com/nu11ptr/parsegen/runtime/go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,10 +12,10 @@ const (
 	de/* blah blah
 	  */fghi😊`
 
-	bogus lexer.TokenType = iota
+	bogus runtime.TokenType = iota
 )
 
-func assertToken(t *testing.T, tok *lexer.Token, tt lexer.TokenType, data string,
+func assertToken(t *testing.T, tok *runtime.Token, tt runtime.TokenType, data string,
 	sr, sc, er, ec int) {
 
 	assert.Equal(t, bogus, tok.Type, "Bad token type")
@@ -27,8 +27,8 @@ func assertToken(t *testing.T, tok *lexer.Token, tt lexer.TokenType, data string
 }
 
 func TestLexer(t *testing.T) {
-	lex := lexer.NewFromString(input)
-	var tok lexer.Token
+	lex := runtime.NewFromString(input)
+	var tok runtime.Token
 
 	t.Run("MatchChar", func(t *testing.T) {
 		assert.False(t, lex.MatchChar('b'))
@@ -104,6 +104,6 @@ func TestLexer(t *testing.T) {
 	})
 
 	t.Run("Match EOF", func(t *testing.T) {
-		assert.Equal(t, lex.CurrChar(), lexer.EOF)
+		assert.Equal(t, lex.CurrChar(), runtime.EOF)
 	})
 }

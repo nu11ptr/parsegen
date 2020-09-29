@@ -3,9 +3,9 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/nu11ptr/parsegen/pkg/lexer"
 	"github.com/nu11ptr/parsegen/pkg/parser"
 	"github.com/nu11ptr/parsegen/pkg/token"
+	runtime "github.com/nu11ptr/parsegen/runtime/go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -97,7 +97,7 @@ suffix: '+' | '*' | '?';
 )
 
 func TestParser(t *testing.T) {
-	lex := lexer.NewFromString(grammar)
+	lex := runtime.NewFromString(grammar)
 	tokenizer := token.NewParseGen(lex)
 	parse := parser.NewParser(tokenizer)
 	parsegen := parser.NewParseGen(parse)

@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/nu11ptr/parsegen/pkg/lexer"
 	"github.com/nu11ptr/parsegen/pkg/token"
+	runtime "github.com/nu11ptr/parsegen/runtime/go"
 )
 
 const spaces = 3
@@ -58,7 +58,7 @@ type ParserNode interface {
 	String(int) string
 }
 
-func NewNestedNode(node ParserNode, suffix *lexer.Token) ParserNode {
+func NewNestedNode(node ParserNode, suffix *runtime.Token) ParserNode {
 	if suffix == nil {
 		return node
 	}
@@ -165,7 +165,7 @@ func (p *ParserLexerRuleRef) String(indent int) string {
 func (p *ParserLexerRuleRef) ParserNode() {}
 
 type ParserToken struct {
-	Token *lexer.Token
+	Token *runtime.Token
 }
 
 func (p *ParserToken) String(indent int) string {

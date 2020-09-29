@@ -2,18 +2,18 @@ package parser
 
 import (
 	"github.com/nu11ptr/parsegen/pkg/ast"
-	"github.com/nu11ptr/parsegen/pkg/lexer"
 	"github.com/nu11ptr/parsegen/pkg/token"
+	runtime "github.com/nu11ptr/parsegen/runtime/go"
 )
 
 type Parser struct {
-	t      lexer.Tokenizer
-	tokens []lexer.Token
+	t      runtime.Tokenizer
+	tokens []runtime.Token
 	pos    int
 }
 
 // NewParser creates a new parser with a given tokenizer
-func NewParser(t lexer.Tokenizer) *Parser {
+func NewParser(t runtime.Tokenizer) *Parser {
 	p := &Parser{t: t, pos: -1}
 	p.NextToken()
 	return p
@@ -27,11 +27,11 @@ func (p *Parser) SetPos(pos int) {
 	p.pos = pos
 }
 
-func (p *Parser) CurrToken() *lexer.Token {
+func (p *Parser) CurrToken() *runtime.Token {
 	return &p.tokens[p.pos]
 }
 
-func (p *Parser) NextToken() *lexer.Token {
+func (p *Parser) NextToken() *runtime.Token {
 	p.pos++
 
 	if p.pos < len(p.tokens) {
@@ -39,13 +39,13 @@ func (p *Parser) NextToken() *lexer.Token {
 	}
 
 	// Get a new token from the tokenizer and append it to our token history before returning it
-	var tok lexer.Token
+	var tok runtime.Token
 	p.t.NextToken(&tok)
 	p.tokens = append(p.tokens, tok)
 	return &p.tokens[0]
 }
 
-func (p *Parser) MatchTokenOrRollback(tt lexer.TokenType, oldPos int) *lexer.Token {
+func (p *Parser) MatchTokenOrRollback(tt runtime.TokenType, oldPos int) *runtime.Token {
 	tok := p.CurrToken()
 	if tok.Type != tt {
 		// Failed - rollback
@@ -56,7 +56,7 @@ func (p *Parser) MatchTokenOrRollback(tt lexer.TokenType, oldPos int) *lexer.Tok
 	return tok
 }
 
-func (p *Parser) TryMatchToken(tt lexer.TokenType) *lexer.Token {
+func (p *Parser) TryMatchToken(tt runtime.TokenType) *runtime.Token {
 	tok := p.CurrToken()
 	if tok.Type != tt {
 		return nil
@@ -77,7 +77,7 @@ type NewParseGenParser struct {
 	ruleSectMap     map[int]ast.ParserNode
 	rulePartMap     map[int]ast.ParserNode
 	rulePartSub1Map map[int]*rulePartSub1
-	suffixMap       map[int]*lexer.Token
+	suffixMap       map[int]*runtime.Token
 }
 
 func NewParseGen(p *Parser) *NewParseGenParser {
@@ -90,7 +90,7 @@ func NewParseGen(p *Parser) *NewParseGenParser {
 		ruleSectMap:     make(map[int]ast.ParserNode, 8),
 		rulePartMap:     make(map[int]ast.ParserNode, 8),
 		rulePartSub1Map: make(map[int]*rulePartSub1, 8),
-		suffixMap:       make(map[int]*lexer.Token, 8),
+		suffixMap:       make(map[int]*runtime.Token, 8),
 	}
 }
 
@@ -236,7 +236,7 @@ func (p *NewParseGenParser) ParseRuleBody() *ast.ParserAlternatives {
 // *** rule_body - '|' rule_sect+ ***
 
 type ruleBodySub1 struct {
-	pipeTok   *lexer.Token
+	pipeTok   *runtime.Token
 	ruleSects []ast.ParserNode
 }
 
@@ -360,9 +360,9 @@ func (p *NewParseGenParser) ParseRulePart() ast.ParserNode {
 // *** rule_part - '(' rule_body ')' ***
 
 type rulePartSub1 struct {
-	lparenTok *lexer.Token
+	lparenTok *runtime.Token
 	ruleBody  *ast.ParserAlternatives
-	rparenTok *lexer.Token
+	rparenTok *runtime.Token
 }
 
 func (p *NewParseGenParser) memoParseRulePartSub1() *rulePartSub1 {
@@ -406,7 +406,7 @@ func (p *NewParseGenParser) ParseRulePartSub1() *rulePartSub1 {
 
 // *** suffix ***
 
-func (p *NewParseGenParser) memoParseSuffix() *lexer.Token {
+func (p *NewParseGenParser) memoParseSuffix() *runtime.Token {
 	pos := p.p.Pos()
 	suffix, ok := p.suffixMap[pos]
 	if ok {
@@ -418,7 +418,7 @@ func (p *NewParseGenParser) memoParseSuffix() *lexer.Token {
 	return suffix
 }
 
-func (p *NewParseGenParser) ParseSuffix() *lexer.Token {
+func (p *NewParseGenParser) ParseSuffix() *runtime.Token {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 

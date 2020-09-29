@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/nu11ptr/parsegen/pkg/lexer"
+import runtime "github.com/nu11ptr/parsegen/runtime/go"
 
 type LexerRule struct {
 	Fragment bool
@@ -49,7 +49,7 @@ type LexerRuleRef struct {
 func (l *LexerRuleRef) LexerNode() {}
 
 type LexerToken struct {
-	Token *lexer.Token
+	Token *runtime.Token
 }
 
 func (l *LexerToken) LexerNode() {}

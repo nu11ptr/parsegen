@@ -1,10 +1,8 @@
 package token
 
-// *** Potentially Generated ***
+import runtime "github.com/nu11ptr/parsegen/runtime/go"
 
-import (
-	"github.com/nu11ptr/parsegen/pkg/lexer"
-)
+// *** Potentially Generated ***
 
 type Mode int
 
@@ -14,7 +12,7 @@ const (
 )
 
 const (
-	ILLEGAL lexer.TokenType = iota
+	ILLEGAL runtime.TokenType = iota
 	EOF
 
 	// Mode: Regular
@@ -58,7 +56,7 @@ const (
 )
 
 var (
-	keywords = map[string]lexer.TokenType{
+	keywords = map[string]runtime.TokenType{
 		"fragment": FRAGMENT,
 		"skip":     SKIP_ACTION,
 		"pushMode": PUSH_ACTION,
@@ -67,16 +65,16 @@ var (
 )
 
 type ParseGenTokenizer struct {
-	lex *lexer.Lexer
+	lex *runtime.Lexer
 
 	mode Mode
 }
 
-func NewParseGen(lex *lexer.Lexer) *ParseGenTokenizer {
+func NewParseGen(lex *runtime.Lexer) *ParseGenTokenizer {
 	return &ParseGenTokenizer{lex: lex, mode: REGULAR}
 }
 
-func (t *ParseGenTokenizer) processRuleName(tok *lexer.Token) bool {
+func (t *ParseGenTokenizer) processRuleName(tok *runtime.Token) bool {
 	// [a-z]
 	if !t.lex.MatchCharInRange('a', 'z') {
 		return false
@@ -99,7 +97,7 @@ func (t *ParseGenTokenizer) processRuleName(tok *lexer.Token) bool {
 	return true
 }
 
-func (t *ParseGenTokenizer) processTokenName(tok *lexer.Token) bool {
+func (t *ParseGenTokenizer) processTokenName(tok *runtime.Token) bool {
 	// [A-Z]
 	if !t.lex.MatchCharInRange('A', 'Z') {
 		return false
@@ -115,7 +113,7 @@ func (t *ParseGenTokenizer) processTokenName(tok *lexer.Token) bool {
 	return true
 }
 
-func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *lexer.Token) {
+func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *runtime.Token) {
 	switch ch {
 	case '\\':
 		switch t.lex.NextChar() {
@@ -171,7 +169,7 @@ func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *lexer.Token) {
 	}
 }
 
-func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
+func (t *ParseGenTokenizer) NextToken(tok *runtime.Token) {
 	if t.mode == CHAR_CLASS {
 		t.charClassNextToken(t.lex.CurrChar(), tok)
 		return
@@ -276,7 +274,7 @@ func (t *ParseGenTokenizer) NextToken(tok *lexer.Token) {
 	case '[':
 		t.lex.BuildTokenNext(LBRACK, tok)
 		t.mode = CHAR_CLASS
-	case lexer.EOF:
+	case runtime.EOF:
 		t.lex.BuildToken(EOF, tok)
 	default:
 		t.lex.BuildTokenDataNext(ILLEGAL, tok)
