@@ -99,7 +99,7 @@ suffix: '+' | '*' | '?';
 func TestParser(t *testing.T) {
 	lex := runtime.NewFromString(grammar)
 	tokenizer := token.NewParseGen(lex)
-	parse := parser.NewParser(tokenizer)
+	parse := runtime.NewParser(tokenizer)
 	parsegen := parser.NewParseGen(parse)
 
 	ast := parsegen.ParseTopLevel()

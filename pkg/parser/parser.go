@@ -6,69 +6,10 @@ import (
 	runtime "github.com/nu11ptr/parsegen/runtime/go"
 )
 
-type Parser struct {
-	t      runtime.Tokenizer
-	tokens []runtime.Token
-	pos    int
-}
-
-// NewParser creates a new parser with a given tokenizer
-func NewParser(t runtime.Tokenizer) *Parser {
-	p := &Parser{t: t, pos: -1}
-	p.NextToken()
-	return p
-}
-
-func (p *Parser) Pos() int {
-	return p.pos
-}
-
-func (p *Parser) SetPos(pos int) {
-	p.pos = pos
-}
-
-func (p *Parser) CurrToken() *runtime.Token {
-	return &p.tokens[p.pos]
-}
-
-func (p *Parser) NextToken() *runtime.Token {
-	p.pos++
-
-	if p.pos < len(p.tokens) {
-		return &p.tokens[p.pos]
-	}
-
-	// Get a new token from the tokenizer and append it to our token history before returning it
-	var tok runtime.Token
-	p.t.NextToken(&tok)
-	p.tokens = append(p.tokens, tok)
-	return &p.tokens[0]
-}
-
-func (p *Parser) MatchTokenOrRollback(tt runtime.TokenType, oldPos int) *runtime.Token {
-	tok := p.CurrToken()
-	if tok.Type != tt {
-		// Failed - rollback
-		p.SetPos(oldPos)
-		return nil
-	}
-	p.NextToken()
-	return tok
-}
-
-func (p *Parser) TryMatchToken(tt runtime.TokenType) *runtime.Token {
-	tok := p.CurrToken()
-	if tok.Type != tt {
-		return nil
-	}
-	p.NextToken()
-	return tok
-}
-
 // *** Below will be automatically generated
 
 type NewParseGenParser struct {
-	p *Parser
+	p *runtime.Parser
 
 	topLevelMap     map[int]*ast.TopLevel
 	parseRuleMap    map[int]*ast.ParserRule
@@ -80,7 +21,7 @@ type NewParseGenParser struct {
 	suffixMap       map[int]*runtime.Token
 }
 
-func NewParseGen(p *Parser) *NewParseGenParser {
+func NewParseGen(p *runtime.Parser) *NewParseGenParser {
 	return &NewParseGenParser{
 		p:               p,
 		topLevelMap:     make(map[int]*ast.TopLevel, 8),
