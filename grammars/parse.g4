@@ -13,7 +13,7 @@ parse_rule: RULE_NAME ':' rule_body ';';
 
 rule_body: rule_sect+ ('|' rule_sect+)*;
 
-rule_sect: rule_part suffix?;
+rule_sect:  rule_part suffix?;
 
 rule_part
 	: '(' rule_body ')'
