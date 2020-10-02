@@ -1,7 +1,7 @@
 lexer grammar parsegen_lexer
 	;
 
-RULE_NAME: [a-z] [A-Za-z0-9_]*;
+RULE_NAME: [a-z] [A-Za-z0-9_.]*;
 
 STRING: '\'' ('\\\'' | ~'\'')+ '\'';
 

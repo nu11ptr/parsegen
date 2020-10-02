@@ -1,4 +1,4 @@
-package parser
+package pgparser
 
 import (
 	"github.com/nu11ptr/parsegen/pkg/ast"
@@ -195,5 +195,5 @@ func (p *Parser) ParseCodeBlock() *ast.CodeBlock {
 		return nil
 	}
 
-	return ast.NewCodeBlock(typeTok.Data, codeBlockTok.Data)
+	return ast.NewCodeBlock(ruleNameTok.Data, typeTok, codeBlockTok.Data)
 }

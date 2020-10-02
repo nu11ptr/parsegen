@@ -20,6 +20,10 @@ code {
 	parse_rule -> *ast.ParserRule {{
 		return &ast.ParserRule{ruleNameTok.Data, ruleBody}
 	}}
+
+	rule_body.sub1 {{
+		return &ruleBodySub1{pipeTok: pipeTok, ruleSects: ruleSects}
+	}}
 }
 `
 )
@@ -47,6 +51,12 @@ var (
 		{Type: pgtoken.TYPE, Data: "-> *ast.ParserRule "},
 		{Type: pgtoken.CODE_BLOCK, Data: `{{
 		return &ast.ParserRule{ruleNameTok.Data, ruleBody}
+	}}`},
+
+		// rule_body.sub1
+		{Type: pgtoken.RULE_NAME, Data: "rule_body.sub1"},
+		{Type: pgtoken.CODE_BLOCK, Data: `{{
+		return &ruleBodySub1{pipeTok: pipeTok, ruleSects: ruleSects}
 	}}`},
 
 		// Code exit/EOF

@@ -46,7 +46,7 @@ func (t *Tokenizer) processRuleName(tok *runtime.Token) bool {
 
 	// [A-Za-z0-9_]*
 	for t.lex.MatchCharInRange('A', 'Z') || t.lex.MatchCharInRange('a', 'z') ||
-		t.lex.MatchCharInRange('0', '9') || t.lex.MatchChar('_') {
+		t.lex.MatchCharInRange('0', '9') || t.lex.MatchChar('_') || t.lex.MatchChar('.') {
 	}
 
 	t.lex.BuildTokenData(RULE_NAME, tok)
