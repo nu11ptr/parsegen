@@ -52,7 +52,7 @@ var (
 		runtime.Token{Type: token.TOKEN_LIT, Data: "';'"},
 		runtime.Token{Type: token.SEMI},
 
-		runtime.Token{Type: token.EOF},
+		runtime.Token{Type: runtime.EOF},
 	}
 
 	lexerTokens = []runtime.Token{
@@ -92,7 +92,7 @@ var (
 		runtime.Token{Type: token.RBRACK},
 		runtime.Token{Type: token.SEMI},
 
-		runtime.Token{Type: token.EOF},
+		runtime.Token{Type: runtime.EOF},
 	}
 )
 

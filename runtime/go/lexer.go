@@ -8,15 +8,20 @@ import (
 )
 
 const (
-	// EOF represents the end of the file
-	EOF rune = '\uffff'
-	// Err represents an error that occurred during lexing
-	Err rune = '\ufffe'
-	bom rune = '\ufeff'
+	// EOFChar represents the end of the file
+	EOFChar rune = '\uffff'
+	// ErrChar represents an error that occurred during lexing
+	ErrChar rune = '\ufffe'
+	bomChar rune = '\ufeff'
 )
 
 // TokenType is an enum type for different token type values
 type TokenType int
+
+const (
+	ILLEGAL TokenType = iota
+	EOF
+)
 
 // Token represents a single token output by the lexer and contains the type of
 // token, the start/end coordinates, and optionally the string data
@@ -88,15 +93,15 @@ func (l *Lexer) readChar() (ch rune, size int) {
 		if ch == utf8.RuneError {
 			if size > 0 {
 				// TODO: record illegal encoding error
-				ch = Err
+				ch = ErrChar
 			} else {
 				// TODO: record error
-				ch = Err
+				ch = ErrChar
 			}
 			return
-		} else if ch == bom && l.pos > 0 {
+		} else if ch == bomChar && l.pos > 0 {
 			// TODO: record illegal byte order mark
-			ch = Err
+			ch = ErrChar
 			return
 		}
 	}
@@ -118,7 +123,7 @@ func (l *Lexer) NextChar() rune {
 	if l.currCh == '\n' {
 		l.row++
 		l.col = 1
-	} else if l.currCh != EOF {
+	} else if l.currCh != EOFChar {
 		l.col++
 	}
 
@@ -126,7 +131,7 @@ func (l *Lexer) NextChar() rune {
 
 	// Are we done?
 	if l.nextPos >= len(l.input) {
-		l.currCh = EOF
+		l.currCh = EOFChar
 		return l.currCh
 	}
 
@@ -300,7 +305,7 @@ func (l *Lexer) MatchSeq(seq string) bool {
 // not match, it will continue to try until it reach end of file.
 func (l *Lexer) MatchUntilSeq(seq string) {
 outer:
-	for ch := l.CurrChar(); ch != EOF; ch = l.NextChar() {
+	for ch := l.CurrChar(); ch != EOFChar; ch = l.NextChar() {
 		l.MarkPos()
 		for _, c := range seq {
 			if c != ch {

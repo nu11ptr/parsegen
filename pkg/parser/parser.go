@@ -65,7 +65,7 @@ func (p *NewParseGenParser) ParseTopLevel() *ast.TopLevel {
 	}
 
 	// ### EOF ###
-	eofTok := p.p.MatchTokenOrRollback(token.EOF, oldPos)
+	eofTok := p.p.MatchTokenOrRollback(runtime.EOF, oldPos)
 	if eofTok == nil {
 		return nil
 	}

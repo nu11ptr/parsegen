@@ -12,13 +12,10 @@ const (
 )
 
 const (
-	ILLEGAL runtime.TokenType = iota
-	EOF
-
 	// Mode: Regular
 
 	// Char set
-	RULE_NAME
+	RULE_NAME runtime.TokenType = iota + runtime.EOF + 1
 	TOKEN_NAME
 	TOKEN_LIT
 
@@ -135,7 +132,7 @@ func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *runtime.Token) {
 			// '{'
 			t.lex.ResetPos()
 			if !t.lex.MatchChar('{') {
-				t.lex.BuildTokenDataNext(ILLEGAL, tok)
+				t.lex.BuildTokenDataNext(runtime.ILLEGAL, tok)
 				break
 			}
 
@@ -146,12 +143,12 @@ func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *runtime.Token) {
 				matched = true
 			}
 			if !matched {
-				t.lex.BuildTokenDataNext(ILLEGAL, tok)
+				t.lex.BuildTokenDataNext(runtime.ILLEGAL, tok)
 				break
 			}
 
 			if !t.lex.MatchChar('}') {
-				t.lex.BuildTokenDataNext(ILLEGAL, tok)
+				t.lex.BuildTokenDataNext(runtime.ILLEGAL, tok)
 				break
 			}
 
@@ -196,7 +193,7 @@ func (t *ParseGenTokenizer) NextToken(tok *runtime.Token) {
 				t.lex.MatchSeq("*/")
 				t.lex.DiscardTokenData()
 			default:
-				t.lex.BuildTokenDataNext(ILLEGAL, tok)
+				t.lex.BuildTokenDataNext(runtime.ILLEGAL, tok)
 				return
 			}
 		// [ \t\r\n\f]+
@@ -228,13 +225,13 @@ func (t *ParseGenTokenizer) NextToken(tok *runtime.Token) {
 			matched = true
 		}
 		if !matched {
-			t.lex.BuildTokenDataNext(ILLEGAL, tok)
+			t.lex.BuildTokenDataNext(runtime.ILLEGAL, tok)
 			return
 		}
 
 		// '\''
 		if !t.lex.MatchChar('\'') {
-			t.lex.BuildTokenDataNext(ILLEGAL, tok)
+			t.lex.BuildTokenDataNext(runtime.ILLEGAL, tok)
 			return
 		}
 
@@ -244,7 +241,7 @@ func (t *ParseGenTokenizer) NextToken(tok *runtime.Token) {
 
 		// '>'
 		if !t.lex.MatchChar('>') {
-			t.lex.BuildTokenDataNext(ILLEGAL, tok)
+			t.lex.BuildTokenDataNext(runtime.ILLEGAL, tok)
 			return
 		}
 
@@ -274,9 +271,9 @@ func (t *ParseGenTokenizer) NextToken(tok *runtime.Token) {
 	case '[':
 		t.lex.BuildTokenNext(LBRACK, tok)
 		t.mode = CHAR_CLASS
-	case runtime.EOF:
-		t.lex.BuildToken(EOF, tok)
+	case runtime.EOFChar:
+		t.lex.BuildToken(runtime.EOF, tok)
 	default:
-		t.lex.BuildTokenDataNext(ILLEGAL, tok)
+		t.lex.BuildTokenDataNext(runtime.ILLEGAL, tok)
 	}
 }
