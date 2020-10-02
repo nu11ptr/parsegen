@@ -63,17 +63,17 @@ var (
 	}
 )
 
-type ParseGenTokenizer struct {
+type Tokenizer struct {
 	lex *runtime.Lexer
 
 	mode Mode
 }
 
-func NewParseGen(lex *runtime.Lexer) *ParseGenTokenizer {
-	return &ParseGenTokenizer{lex: lex, mode: REGULAR}
+func New(lex *runtime.Lexer) *Tokenizer {
+	return &Tokenizer{lex: lex, mode: REGULAR}
 }
 
-func (t *ParseGenTokenizer) processRuleName(tok *runtime.Token) bool {
+func (t *Tokenizer) processRuleName(tok *runtime.Token) bool {
 	// [a-z]
 	if !t.lex.MatchCharInRange('a', 'z') {
 		return false
@@ -96,7 +96,7 @@ func (t *ParseGenTokenizer) processRuleName(tok *runtime.Token) bool {
 	return true
 }
 
-func (t *ParseGenTokenizer) processTokenName(tok *runtime.Token) bool {
+func (t *Tokenizer) processTokenName(tok *runtime.Token) bool {
 	// [A-Z]
 	if !t.lex.MatchCharInRange('A', 'Z') {
 		return false
@@ -112,7 +112,7 @@ func (t *ParseGenTokenizer) processTokenName(tok *runtime.Token) bool {
 	return true
 }
 
-func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *runtime.Token) {
+func (t *Tokenizer) charClassNextToken(ch rune, tok *runtime.Token) {
 	switch ch {
 	case '\\':
 		switch t.lex.NextChar() {
@@ -168,7 +168,7 @@ func (t *ParseGenTokenizer) charClassNextToken(ch rune, tok *runtime.Token) {
 	}
 }
 
-func (t *ParseGenTokenizer) NextToken(tok *runtime.Token) {
+func (t *Tokenizer) NextToken(tok *runtime.Token) {
 	if t.mode == CHAR_CLASS {
 		t.charClassNextToken(t.lex.CurrChar(), tok)
 		return

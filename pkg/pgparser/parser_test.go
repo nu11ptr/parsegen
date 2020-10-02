@@ -62,8 +62,8 @@ const (
 )
 
 func TestParser(t *testing.T) {
-	lex := runtime.NewFromString(grammar)
-	tokenizer := pgtoken.NewTokenizer(lex)
+	lex := runtime.NewLexerFromString(grammar)
+	tokenizer := pgtoken.New(lex)
 	parse := runtime.NewParser(tokenizer)
 	parsegen := pgparser.New(parse)
 

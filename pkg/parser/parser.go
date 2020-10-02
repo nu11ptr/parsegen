@@ -8,7 +8,7 @@ import (
 
 // *** Below will be automatically generated
 
-type NewParseGenParser struct {
+type Parser struct {
 	p *runtime.Parser
 
 	topLevelMap     map[int]*ast.TopLevel
@@ -21,8 +21,8 @@ type NewParseGenParser struct {
 	suffixMap       map[int]*runtime.Token
 }
 
-func NewParseGen(p *runtime.Parser) *NewParseGenParser {
-	return &NewParseGenParser{
+func New(p *runtime.Parser) *Parser {
+	return &Parser{
 		p:               p,
 		topLevelMap:     make(map[int]*ast.TopLevel, 8),
 		parseRuleMap:    make(map[int]*ast.ParserRule, 8),
@@ -37,7 +37,7 @@ func NewParseGen(p *runtime.Parser) *NewParseGenParser {
 
 // *** top_level ***
 
-func (p *NewParseGenParser) memoParseTopLevel() *ast.TopLevel {
+func (p *Parser) memoParseTopLevel() *ast.TopLevel {
 	pos := p.p.Pos()
 	topLevel, ok := p.topLevelMap[pos]
 	if ok {
@@ -50,7 +50,7 @@ func (p *NewParseGenParser) memoParseTopLevel() *ast.TopLevel {
 }
 
 // ParseTopLevel parses the "top_level" parser rule
-func (p *NewParseGenParser) ParseTopLevel() *ast.TopLevel {
+func (p *Parser) ParseTopLevel() *ast.TopLevel {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 
@@ -75,7 +75,7 @@ func (p *NewParseGenParser) ParseTopLevel() *ast.TopLevel {
 
 // *** parse_rule ***
 
-func (p *NewParseGenParser) memoParseParseRule() *ast.ParserRule {
+func (p *Parser) memoParseParseRule() *ast.ParserRule {
 	pos := p.p.Pos()
 	parseRule, ok := p.parseRuleMap[pos]
 	if ok {
@@ -88,7 +88,7 @@ func (p *NewParseGenParser) memoParseParseRule() *ast.ParserRule {
 }
 
 // ParseParseRule parses the "parse_rule" parser rule
-func (p *NewParseGenParser) ParseParseRule() *ast.ParserRule {
+func (p *Parser) ParseParseRule() *ast.ParserRule {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 
@@ -123,7 +123,7 @@ func (p *NewParseGenParser) ParseParseRule() *ast.ParserRule {
 
 // *** rule_body ***
 
-func (p *NewParseGenParser) memoParseRuleBody() *ast.ParserAlternatives {
+func (p *Parser) memoParseRuleBody() *ast.ParserAlternatives {
 	pos := p.p.Pos()
 	ruleBody, ok := p.ruleBodyMap[pos]
 	if ok {
@@ -136,7 +136,7 @@ func (p *NewParseGenParser) memoParseRuleBody() *ast.ParserAlternatives {
 }
 
 // ParseRuleBody parses the "rule_body" parser rule
-func (p *NewParseGenParser) ParseRuleBody() *ast.ParserAlternatives {
+func (p *Parser) ParseRuleBody() *ast.ParserAlternatives {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 
@@ -181,7 +181,7 @@ type ruleBodySub1 struct {
 	ruleSects []ast.ParserNode
 }
 
-func (p *NewParseGenParser) memoParseRuleBodySub1() *ruleBodySub1 {
+func (p *Parser) memoParseRuleBodySub1() *ruleBodySub1 {
 	pos := p.p.Pos()
 	ruleBodySub1, ok := p.ruleBodySub1Map[pos]
 	if ok {
@@ -193,7 +193,7 @@ func (p *NewParseGenParser) memoParseRuleBodySub1() *ruleBodySub1 {
 	return ruleBodySub1
 }
 
-func (p *NewParseGenParser) ParseRuleBodySub1() *ruleBodySub1 {
+func (p *Parser) ParseRuleBodySub1() *ruleBodySub1 {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 
@@ -225,7 +225,7 @@ func (p *NewParseGenParser) ParseRuleBodySub1() *ruleBodySub1 {
 
 // *** rule_sect ***
 
-func (p *NewParseGenParser) memoParseRuleSect() ast.ParserNode {
+func (p *Parser) memoParseRuleSect() ast.ParserNode {
 	pos := p.p.Pos()
 	ruleSect, ok := p.ruleSectMap[pos]
 	if ok {
@@ -237,7 +237,7 @@ func (p *NewParseGenParser) memoParseRuleSect() ast.ParserNode {
 	return ruleSect
 }
 
-func (p *NewParseGenParser) ParseRuleSect() ast.ParserNode {
+func (p *Parser) ParseRuleSect() ast.ParserNode {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 
@@ -257,7 +257,7 @@ func (p *NewParseGenParser) ParseRuleSect() ast.ParserNode {
 
 // *** rule_part ***
 
-func (p *NewParseGenParser) memoParseRulePart() ast.ParserNode {
+func (p *Parser) memoParseRulePart() ast.ParserNode {
 	pos := p.p.Pos()
 	rulePart, ok := p.rulePartMap[pos]
 	if ok {
@@ -269,7 +269,7 @@ func (p *NewParseGenParser) memoParseRulePart() ast.ParserNode {
 	return rulePart
 }
 
-func (p *NewParseGenParser) ParseRulePart() ast.ParserNode {
+func (p *Parser) ParseRulePart() ast.ParserNode {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 
@@ -306,7 +306,7 @@ type rulePartSub1 struct {
 	rparenTok *runtime.Token
 }
 
-func (p *NewParseGenParser) memoParseRulePartSub1() *rulePartSub1 {
+func (p *Parser) memoParseRulePartSub1() *rulePartSub1 {
 	pos := p.p.Pos()
 	rulePartSub1, ok := p.rulePartSub1Map[pos]
 	if ok {
@@ -318,7 +318,7 @@ func (p *NewParseGenParser) memoParseRulePartSub1() *rulePartSub1 {
 	return rulePartSub1
 }
 
-func (p *NewParseGenParser) ParseRulePartSub1() *rulePartSub1 {
+func (p *Parser) ParseRulePartSub1() *rulePartSub1 {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 
@@ -347,7 +347,7 @@ func (p *NewParseGenParser) ParseRulePartSub1() *rulePartSub1 {
 
 // *** suffix ***
 
-func (p *NewParseGenParser) memoParseSuffix() *runtime.Token {
+func (p *Parser) memoParseSuffix() *runtime.Token {
 	pos := p.p.Pos()
 	suffix, ok := p.suffixMap[pos]
 	if ok {
@@ -359,7 +359,7 @@ func (p *NewParseGenParser) memoParseSuffix() *runtime.Token {
 	return suffix
 }
 
-func (p *NewParseGenParser) ParseSuffix() *runtime.Token {
+func (p *Parser) ParseSuffix() *runtime.Token {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 

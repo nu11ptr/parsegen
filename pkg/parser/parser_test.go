@@ -7,6 +7,7 @@ import (
 	"github.com/nu11ptr/parsegen/pkg/token"
 	runtime "github.com/nu11ptr/parsegen/runtime/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -97,11 +98,12 @@ suffix: '+' | '*' | '?';
 )
 
 func TestParser(t *testing.T) {
-	lex := runtime.NewFromString(grammar)
-	tokenizer := token.NewParseGen(lex)
+	lex := runtime.NewLexerFromString(grammar)
+	tokenizer := token.New(lex)
 	parse := runtime.NewParser(tokenizer)
-	parsegen := parser.NewParseGen(parse)
+	parsegen := parser.New(parse)
 
 	ast := parsegen.ParseTopLevel()
+	require.NotNil(t, ast)
 	assert.Equal(t, expected, ast.String())
 }

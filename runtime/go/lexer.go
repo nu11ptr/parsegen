@@ -47,9 +47,9 @@ type Lexer struct {
 	input                                    []byte
 }
 
-// NewFromBytes creates a new lexer from a byte array. The byte array should
+// NewLexerFromBytes creates a new lexer from a byte array. The byte array should
 // be backed by UTF-8 data
-func NewFromBytes(input []byte) *Lexer {
+func NewLexerFromBytes(input []byte) *Lexer {
 	l := &Lexer{
 		input: input, row: 1, col: 0, // inc'd first time by NextChar
 		startCol: 1, startRow: 1, endRow: 1, endCol: 1,
@@ -58,30 +58,30 @@ func NewFromBytes(input []byte) *Lexer {
 	return l
 }
 
-// NewFromString creates a new lexer from string input data
-func NewFromString(input string) *Lexer {
-	return NewFromBytes([]byte(input))
+// NewLexerFromString creates a new lexer from string input data
+func NewLexerFromString(input string) *Lexer {
+	return NewLexerFromBytes([]byte(input))
 }
 
-// NewFromReader creates a new lexer from a reader. Since this there is no
+// NewLexerFromReader creates a new lexer from a reader. Since this there is no
 // requirement for a "ReadCloser", it is the responsibility of the caller to
 // close the reader if that is required
-func NewFromReader(r io.Reader) (*Lexer, error) {
+func NewLexerFromReader(r io.Reader) (*Lexer, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
-	return NewFromBytes(b), nil
+	return NewLexerFromBytes(b), nil
 }
 
-// NewFromFile creates a new lexer from an input file
-func NewFromFile(filename string) (*Lexer, error) {
+// NewLexerFromFile creates a new lexer from an input file
+func NewLexerFromFile(filename string) (*Lexer, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	return NewFromReader(f)
+	return NewLexerFromReader(f)
 }
 
 func (l *Lexer) readChar() (ch rune, size int) {

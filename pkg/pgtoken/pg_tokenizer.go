@@ -34,7 +34,7 @@ type Tokenizer struct {
 	lex *runtime.Lexer
 }
 
-func NewTokenizer(lex *runtime.Lexer) *Tokenizer {
+func New(lex *runtime.Lexer) *Tokenizer {
 	return &Tokenizer{lex: lex}
 }
 

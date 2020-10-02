@@ -66,8 +66,8 @@ var (
 )
 
 func TestTokenizer(t *testing.T) {
-	lex := runtime.NewFromString(code)
-	tokenizer := pgtoken.NewTokenizer(lex)
+	lex := runtime.NewLexerFromString(code)
+	tokenizer := pgtoken.New(lex)
 
 	for _, tok2 := range tokens {
 		var tok runtime.Token

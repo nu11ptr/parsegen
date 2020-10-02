@@ -97,8 +97,8 @@ var (
 )
 
 func TestParserTokenizer(t *testing.T) {
-	lex := runtime.NewFromString(parserCode)
-	tokenizer := token.NewParseGen(lex)
+	lex := runtime.NewLexerFromString(parserCode)
+	tokenizer := token.New(lex)
 
 	for _, tok2 := range parserTokens {
 		var tok runtime.Token
@@ -109,8 +109,8 @@ func TestParserTokenizer(t *testing.T) {
 }
 
 func TestLexerTokenizer(t *testing.T) {
-	lex := runtime.NewFromString(lexerCode)
-	tokenizer := token.NewParseGen(lex)
+	lex := runtime.NewLexerFromString(lexerCode)
+	tokenizer := token.New(lex)
 
 	for _, tok2 := range lexerTokens {
 		var tok runtime.Token

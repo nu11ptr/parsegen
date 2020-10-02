@@ -27,7 +27,7 @@ func assertToken(t *testing.T, tok *runtime.Token, tt runtime.TokenType, data st
 }
 
 func TestLexer(t *testing.T) {
-	lex := runtime.NewFromString(input)
+	lex := runtime.NewLexerFromString(input)
 	var tok runtime.Token
 
 	t.Run("MatchChar", func(t *testing.T) {
