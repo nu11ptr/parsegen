@@ -1,0 +1,49 @@
+parser = 'parse.g4'
+
+code {
+    top_level -> *ast.TopLevel {{ 
+        return ast.NewTopLevel(parseRules) 
+    }}
+
+    parse_rule -> *ast.ParserRule {{
+        return &ast.ParserRule{ruleNameTok.Data, ruleBody}
+    }}
+
+    rule_body -> *ast.ParserAlternatives {{
+        parserNodes := [][]ast.ParserNode{ruleSects}
+        for _, node := range ruleBodySub1s {
+            parserNodes = append(parserNodes, node.ruleSects)
+        }
+        return &ast.ParserAlternatives{Rules: parserNodes}
+    }}
+
+    rule_body.sub1 {{
+        return &ruleBodySub1{pipeTok: pipeTok, ruleSects: ruleSects}
+    }}
+
+    rule_sect -> ast.ParserNode {{
+        return ast.NewNestedNode(rulePart, suffix)
+    }}
+
+    rule_part -> ast.ParserNode {{
+        return &ast.ParserToken{Token: tokenLitTok}
+    }}
+
+    rule_part.sub1 {{
+        return &rulePartSub1{
+            lparenTok: lparenTok, ruleBody: ruleBody, rparenTok: rparenTok,
+        }
+    }}
+
+    suffix.alt1 -> *runtime.Token {{
+        return plusTok
+    }}
+
+    suffix.alt2 -> *runtime.Token {{
+        return starTok
+    }}
+
+    suffix.alt3 -> *runtime.Token {{
+        return questMarkTok
+    }}
+}

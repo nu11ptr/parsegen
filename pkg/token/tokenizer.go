@@ -17,6 +17,8 @@ const (
 	// Char set
 	RULE_NAME runtime.TokenType = iota + runtime.EOF + 1
 	TOKEN_NAME
+
+	// Sequences
 	TOKEN_LIT
 
 	// Keywords

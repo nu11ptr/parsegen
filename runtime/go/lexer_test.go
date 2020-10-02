@@ -55,8 +55,9 @@ func TestLexer(t *testing.T) {
 	})
 
 	t.Run("MatchUntilSeq/DiscardTokenData", func(t *testing.T) {
-		lex.MatchUntilSeq("*/")
+		assert.True(t, lex.MatchUntilSeq("*/"))
 		lex.DiscardTokenData()
+		assert.False(t, lex.MatchUntilSeq("*/"))
 
 		assert.True(t, lex.MatchSeq("*/"))
 		lex.BuildTokenData(bogus, &tok)

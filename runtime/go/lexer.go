@@ -302,13 +302,16 @@ func (l *Lexer) MatchSeq(seq string) bool {
 
 // MatchUntilSeq attempts to match any character sequence except the one given.
 // If it matches, it does not include the given sequence in the match. If it does
-// not match, it will continue to try until it reach end of file.
-func (l *Lexer) MatchUntilSeq(seq string) {
+// not match, it will continue to try until it reach end of file. It returns true
+// if it matches any chars or false if it matched none
+func (l *Lexer) MatchUntilSeq(seq string) (matches bool) {
+	matches = false
 outer:
 	for ch := l.CurrChar(); ch != EOFChar; ch = l.NextChar() {
 		l.MarkPos()
 		for _, c := range seq {
 			if c != ch {
+				matches = true
 				continue outer
 			}
 			ch = l.NextChar()
@@ -316,4 +319,6 @@ outer:
 		l.ResetPos() // We don't match the chars in the seq itself
 		break
 	}
+
+	return
 }
