@@ -5,7 +5,7 @@ options {
 	tokenVocab = parsegen_lexer;
 }
 
-body: parser_decl code_blocks;
+body: parser_decl code_blocks EOF;
 
 parser_decl: 'parser' '=' STRING;
 
