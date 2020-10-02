@@ -1,4 +1,4 @@
-parser = 'parse.g4'
+parser = 'antlr_parser.g4'
 
 code {
     top_level -> *ast.TopLevel {{ 

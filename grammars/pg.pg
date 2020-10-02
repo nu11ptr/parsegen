@@ -1,0 +1,19 @@
+parser = 'pg_parser.g4'
+
+code {
+    body -> *ast.Body {{ 
+        return ast.NewBody(*parserDecl, codeBlocks)
+    }}
+
+    parser_decl -> *string {{
+        return &stringTok.Data
+    }}
+
+    code_blocks -> []*ast.CodeBlock {{
+        return codeBlocks
+    }}
+
+    code_block -> *ast.CodeBlock {{
+        return ast.NewCodeBlock(ruleNameTok.Data, typeTok, codeBlockTok.Data)
+    }}
+}

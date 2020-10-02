@@ -1,8 +1,8 @@
-parser grammar parse
+parser grammar antlr_parser
 	;
 
 options {
-	tokenVocab = lex;
+	tokenVocab = antlr_lexer;
 }
 
 top_level: (parse_rule | lex_rule)* EOF;
@@ -13,7 +13,7 @@ parse_rule: RULE_NAME ':' rule_body ';';
 
 rule_body: rule_sect+ ('|' rule_sect+)*;
 
-rule_sect:  rule_part suffix?;
+rule_sect: rule_part suffix?;
 
 rule_part
 	: '(' rule_body ')'

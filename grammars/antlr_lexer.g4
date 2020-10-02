@@ -1,4 +1,4 @@
-lexer grammar lex
+lexer grammar antlr_lexer
 	;
 
 fragment HEX_DIGIT: [A-Fa-f0-9];

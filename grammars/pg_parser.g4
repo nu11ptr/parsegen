@@ -1,8 +1,8 @@
-parser grammar parsegen_parser
+parser grammar pg_parser
 	;
 
 options {
-	tokenVocab = parsegen_lexer;
+	tokenVocab = pg_lexer;
 }
 
 body: parser_decl code_blocks EOF;

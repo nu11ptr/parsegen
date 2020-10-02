@@ -1,4 +1,4 @@
-lexer grammar parsegen_lexer
+lexer grammar pg_lexer
 	;
 
 RULE_NAME: [a-z] [A-Za-z0-9_.]*;
