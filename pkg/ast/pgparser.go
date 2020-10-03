@@ -22,14 +22,17 @@ func NewBody(parser string, codeBlocks *CodeBlocks) *Body {
 }
 
 func (b *Body) String() string {
-	buff := strings.Builder{}
+	print := new(print)
+	b.print(print)
+	return print.String()
+}
 
-	buff.WriteString("Body:\n")
-	buff.WriteString(strings.Repeat(" ", 1*spaces))
-	buff.WriteString(fmt.Sprintf("└──Parser: %s\n", b.Parser))
-	buff.WriteString(b.CodeBlocks.String(1))
-
-	return buff.String()
+func (b *Body) print(print *print) {
+	print.WriteString("Body")
+	print.PushIndent()
+	print.WriteStringPair("Parser", b.Parser)
+	b.CodeBlocks.print(print)
+	print.PopIndent()
 }
 
 type CodeBlocks struct {
@@ -41,20 +44,21 @@ func NewCodeBlocks(lang string, blocks []*CodeBlock) *CodeBlocks {
 	return &CodeBlocks{Language: parseString(lang), Blocks: blocks}
 }
 
-func (c *CodeBlocks) String(indent int) string {
-	buff := strings.Builder{}
+func (c *CodeBlocks) String() string {
+	print := new(print)
+	c.print(print)
+	return print.String()
+}
 
-	buff.WriteString(strings.Repeat(" ", indent*spaces))
-	buff.WriteString("└──Code Blocks:\n")
-
-	buff.WriteString(strings.Repeat(" ", (indent+1)*spaces))
-	buff.WriteString(fmt.Sprintf("└──Language: %s\n", c.Language))
+func (c *CodeBlocks) print(print *print) {
+	print.WriteString("Code Blocks")
+	print.PushIndent()
+	print.WriteStringPair("Language", c.Language)
 
 	for _, block := range c.Blocks {
-		buff.WriteString(block.String(indent + 1))
+		block.print(print)
 	}
-
-	return buff.String()
+	print.PopIndent()
 }
 
 type CodeBlock struct {
@@ -73,20 +77,19 @@ func NewCodeBlock(rule string, type_ *runtime.Token, code string) *CodeBlock {
 	return &CodeBlock{Rule: rule, Type: t, Code: c}
 }
 
-func (c *CodeBlock) String(indent int) string {
-	buff := strings.Builder{}
-	buff.WriteString(strings.Repeat(" ", indent*spaces))
-	buff.WriteString("└──Code Block:\n")
+func (c *CodeBlock) String() string {
+	print := new(print)
+	c.print(print)
+	return print.String()
+}
 
-	buff.WriteString(strings.Repeat(" ", (indent+1)*spaces))
-	buff.WriteString(fmt.Sprintf("└──Rule: %s\n", c.Rule))
-
+func (c *CodeBlock) print(print *print) {
+	print.WriteString("Code Block")
+	print.PushIndent()
+	print.WriteStringPair("Rule", c.Rule)
 	if c.Type != "" {
-		buff.WriteString(strings.Repeat(" ", (indent+1)*spaces))
-		buff.WriteString(fmt.Sprintf("└──Type: %s\n", c.Type))
+		print.WriteStringPair("Type", c.Type)
 	}
-
-	buff.WriteString(strings.Repeat(" ", (indent+1)*spaces))
-	buff.WriteString(fmt.Sprintf("└──Code: {{ %s }}\n", c.Code))
-	return buff.String()
+	print.WriteStringPair("Code", fmt.Sprintf("{{ %s }}", c.Code))
+	print.PopIndent()
 }

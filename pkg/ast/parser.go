@@ -9,8 +9,6 @@ import (
 	runtime "github.com/nu11ptr/parsegen/runtime/go"
 )
 
-const spaces = 3
-
 type TopLevel struct {
 	ParserRulesMap map[string]*ParserRule
 	LexerRulesMap  map[string]*LexerRule
