@@ -1,6 +1,6 @@
 parser = 'pg_parser.g4'
 
-code {
+code('go') {
     body -> *ast.Body {{ 
         return ast.NewBody(*parserDecl, codeBlocks)
     }}
@@ -9,8 +9,8 @@ code {
         return &stringTok.Data
     }}
 
-    code_blocks -> []*ast.CodeBlock {{
-        return codeBlocks
+    code_blocks -> *ast.CodeBlocks {{
+        return ast.NewCodeBlocks(stringTok.Data, codeBlocks)
     }}
 
     code_block -> *ast.CodeBlock {{

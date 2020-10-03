@@ -1,6 +1,6 @@
 parser = 'antlr_parser.g4'
 
-code {
+code('go') {
     top_level -> *ast.TopLevel {{ 
         return ast.NewTopLevel(parseRules) 
     }}

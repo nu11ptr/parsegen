@@ -7,29 +7,53 @@ import (
 	runtime "github.com/nu11ptr/parsegen/runtime/go"
 )
 
-type Body struct {
-	Parser     string
-	CodeBlocks []*CodeBlock
+func parseString(str string) string {
+	// Slicing is safe because we know first and last char are single quote (aka ASCII)
+	return str[1 : len(str)-1]
 }
 
-func NewBody(parser string, codeBlocks []*CodeBlock) *Body {
-	// Slicing is safe because we know first and last char are single quote (aka ASCII)
-	return &Body{Parser: parser[1 : len(parser)-1], CodeBlocks: codeBlocks}
+type Body struct {
+	Parser     string
+	CodeBlocks *CodeBlocks
+}
+
+func NewBody(parser string, codeBlocks *CodeBlocks) *Body {
+	return &Body{Parser: parseString(parser), CodeBlocks: codeBlocks}
 }
 
 func (b *Body) String() string {
 	buff := strings.Builder{}
-	buff.WriteString("Body:\n")
 
+	buff.WriteString("Body:\n")
 	buff.WriteString(strings.Repeat(" ", 1*spaces))
 	buff.WriteString(fmt.Sprintf("└──Parser: %s\n", b.Parser))
+	buff.WriteString(b.CodeBlocks.String(1))
 
-	buff.WriteString(strings.Repeat(" ", 1*spaces))
+	return buff.String()
+}
+
+type CodeBlocks struct {
+	Language string
+	Blocks   []*CodeBlock
+}
+
+func NewCodeBlocks(lang string, blocks []*CodeBlock) *CodeBlocks {
+	return &CodeBlocks{Language: parseString(lang), Blocks: blocks}
+}
+
+func (c *CodeBlocks) String(indent int) string {
+	buff := strings.Builder{}
+
+	buff.WriteString(strings.Repeat(" ", indent*spaces))
 	buff.WriteString("└──Code Blocks:\n")
 
-	for _, block := range b.CodeBlocks {
-		buff.WriteString(block.String(2))
+	buff.WriteString(strings.Repeat(" ", (indent+1)*spaces))
+	buff.WriteString(fmt.Sprintf("└──Language: %s\n", c.Language))
+
+	for _, block := range c.Blocks {
+		buff.WriteString(block.String(indent + 1))
 	}
+
 	return buff.String()
 }
 
@@ -52,7 +76,7 @@ func NewCodeBlock(rule string, type_ *runtime.Token, code string) *CodeBlock {
 func (c *CodeBlock) String(indent int) string {
 	buff := strings.Builder{}
 	buff.WriteString(strings.Repeat(" ", indent*spaces))
-	buff.WriteString("└──Code Blocks:\n")
+	buff.WriteString("└──Code Block:\n")
 
 	buff.WriteString(strings.Repeat(" ", (indent+1)*spaces))
 	buff.WriteString(fmt.Sprintf("└──Rule: %s\n", c.Rule))

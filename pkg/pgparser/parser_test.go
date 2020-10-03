@@ -13,7 +13,7 @@ import (
 const (
 	grammar = `parser = 'parse.g4'
 
-   code {
+   code('go') {
        top_level -> *ast.TopLevel {{ 
            return ast.NewTopLevel(parseRules) 
        }}
@@ -39,15 +39,16 @@ const (
 	expected = `Body:
    └──Parser: parse.g4
    └──Code Blocks:
-      └──Code Blocks:
+      └──Language: go
+      └──Code Block:
          └──Rule: top_level
          └──Type: *ast.TopLevel
          └──Code: {{ return ast.NewTopLevel(parseRules) }}
-      └──Code Blocks:
+      └──Code Block:
          └──Rule: parse_rule
          └──Type: *ast.ParserRule
          └──Code: {{ return &ast.ParserRule{ruleNameTok.Data, ruleBody} }}
-      └──Code Blocks:
+      └──Code Block:
          └──Rule: rule_body
          └──Type: *ast.ParserAlternatives
          └──Code: {{ parserNodes := [][]ast.ParserNode{ruleSects}
@@ -55,7 +56,7 @@ const (
              parserNodes = append(parserNodes, node.ruleSects)
          }
          return &ast.ParserAlternatives{Rules: parserNodes} }}
-      └──Code Blocks:
+      └──Code Block:
          └──Rule: rule_body.sub1
          └──Code: {{ return &ruleBodySub1{pipeTok: pipeTok, ruleSects: ruleSects} }}
 `

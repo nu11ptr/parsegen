@@ -13,7 +13,7 @@ type Parser struct {
 
 	bodyMap       map[int]*ast.Body
 	parserDecl    map[int]*string
-	codeBlocksMap map[int][]*ast.CodeBlock
+	codeBlocksMap map[int]*ast.CodeBlocks
 	codeBlockMap  map[int]*ast.CodeBlock
 }
 
@@ -22,7 +22,7 @@ func New(p *runtime.Parser) *Parser {
 		p:             p,
 		bodyMap:       make(map[int]*ast.Body, 8),
 		parserDecl:    make(map[int]*string, 8),
-		codeBlocksMap: make(map[int][]*ast.CodeBlock, 8),
+		codeBlocksMap: make(map[int]*ast.CodeBlocks, 8),
 		codeBlockMap:  make(map[int]*ast.CodeBlock, 8),
 	}
 }
@@ -113,7 +113,7 @@ func (p *Parser) ParseParserDecl() *string {
 
 // *** code_blocks ***
 
-func (p *Parser) memoParseCodeBlocks() []*ast.CodeBlock {
+func (p *Parser) memoParseCodeBlocks() *ast.CodeBlocks {
 	pos := p.p.Pos()
 	codeBlocks, ok := p.codeBlocksMap[pos]
 	if ok {
@@ -126,13 +126,31 @@ func (p *Parser) memoParseCodeBlocks() []*ast.CodeBlock {
 }
 
 // ParseCodeBlocks parses the "code_blocks" parser rule
-func (p *Parser) ParseCodeBlocks() []*ast.CodeBlock {
+func (p *Parser) ParseCodeBlocks() *ast.CodeBlocks {
 	// Rule can fail - might need to rollback
 	oldPos := p.p.Pos()
 
 	// ### 'code' ###
 	codeTok := p.p.MatchTokenOrRollback(pgtoken.CODE, oldPos)
 	if codeTok == nil {
+		return nil
+	}
+
+	// ### '(' ###
+	lparenTok := p.p.MatchTokenOrRollback(pgtoken.LPAREN, oldPos)
+	if lparenTok == nil {
+		return nil
+	}
+
+	// ### STRING ###
+	stringTok := p.p.MatchTokenOrRollback(pgtoken.STRING, oldPos)
+	if stringTok == nil {
+		return nil
+	}
+
+	// ### ')' ###
+	rparenTok := p.p.MatchTokenOrRollback(pgtoken.RPAREN, oldPos)
+	if rparenTok == nil {
 		return nil
 	}
 
@@ -158,7 +176,7 @@ func (p *Parser) ParseCodeBlocks() []*ast.CodeBlock {
 		return nil
 	}
 
-	return codeBlocks
+	return ast.NewCodeBlocks(stringTok.Data, codeBlocks)
 }
 
 // *** code_block ***

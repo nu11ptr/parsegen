@@ -30,3 +30,7 @@ EQUALS: '=';
 LBRACE: '{';
 
 RBRACE: '}';
+
+LPAREN: '(';
+
+RPAREN: ')';

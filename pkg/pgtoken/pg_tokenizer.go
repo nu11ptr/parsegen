@@ -21,6 +21,8 @@ const (
 	EQUALS
 	LBRACE
 	RBRACE
+	LPAREN
+	RPAREN
 )
 
 var (
@@ -159,6 +161,10 @@ func (t *Tokenizer) NextToken(tok *runtime.Token) {
 		t.lex.BuildTokenData(CODE_BLOCK, tok)
 	case '}':
 		t.lex.BuildTokenNext(RBRACE, tok)
+	case '(':
+		t.lex.BuildTokenNext(LPAREN, tok)
+	case ')':
+		t.lex.BuildTokenNext(RPAREN, tok)
 	case runtime.EOFChar:
 		t.lex.BuildToken(runtime.EOF, tok)
 	default:

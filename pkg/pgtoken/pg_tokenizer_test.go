@@ -12,7 +12,7 @@ const (
 	code = `
 parser = 'parse.g4'
 
-code {
+code('go') {
 	top_level -> *ast.TopLevel {{
 		return ast.NewTopLevel(parseRules)
 	}}
@@ -37,6 +37,9 @@ var (
 
 		// Code entry
 		{Type: pgtoken.CODE},
+		{Type: pgtoken.LPAREN},
+		{Type: pgtoken.STRING, Data: "'go'"},
+		{Type: pgtoken.RPAREN},
 		{Type: pgtoken.LBRACE},
 
 		// top_level
